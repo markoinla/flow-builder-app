@@ -1,0 +1,442 @@
+================================================================================
+FLOW BUILDER - EMBEDDABLE ARCHITECTURE OVERVIEW
+================================================================================
+
+CURRENT ARCHITECTURE
+====================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          CLOUDFLARE WORKERS                             │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │                      TanStack Start                                 │ │
+│  │  ┌─────────────────────────────────────────────────────────────┐  │ │
+│  │  │              TanStack Router (File-based)                   │  │ │
+│  │  │                                                             │  │ │
+│  │  │  Routes:                                                   │  │ │
+│  │  │  ├── / (Homepage)                                          │  │ │
+│  │  │  ├── /builder (Main editor) ←→ FlowBuilder.tsx            │  │ │
+│  │  │  ├── /auth/* (Login/Signup with Better Auth)             │  │ │
+│  │  │  └── /api/* (REST endpoints)                              │  │ │
+│  │  │     ├── /api/flows (GET/POST)                             │  │ │
+│  │  │     ├── /api/flows/:id (GET/PUT/DELETE)                  │  │ │
+│  │  │     ├── /api/node-types (GET/POST)                        │  │ │
+│  │  │     └── /api/node-types/:id (PUT/DELETE)                 │  │ │
+│  │  └─────────────────────────────────────────────────────────────┘  │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                   │                                      │
+│                                   ↓                                      │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │              Cloudflare D1 (SQLite Database)                       │ │
+│  │  ┌────────────────────────────────────────────────────────────┐   │ │
+│  │  │  Tables:                                                  │   │ │
+│  │  │  ├── users (from Better Auth)                             │   │ │
+│  │  │  ├── sessions                                             │   │ │
+│  │  │  ├── flows {id, userId, name, description, ...}          │   │ │
+│  │  │  ├── flow_data {flowId, nodes[], edges[], viewport}      │   │ │
+│  │  │  └── node_types {id, userId, type, style, ...}           │   │ │
+│  │  └────────────────────────────────────────────────────────────┘   │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+
+CLIENT-SIDE COMPONENTS
+======================
+
+┌──────────────────────────────────────────────────────────────────────┐
+│                    React 19 Application                              │
+│                                                                      │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │              FlowBuilder.tsx (495 lines)                       │ │
+│  │  State Management:                                             │ │
+│  │  ├── nodes (useNodesState) ─────────────────────┐              │ │
+│  │  ├── edges (useEdgesState) ─────────────────┐  │              │ │
+│  │  ├── customNodeTypes (from D1)           ┌──┼──┴─────┐        │ │
+│  │  └── flowId, flowName, etc.              │  │        │        │ │
+│  │                                           │  ↓        ↓        │ │
+│  │  ┌─────────────────────────────────────────────────────────┐  │ │
+│  │  │         @xyflow/react Component                         │  │ │
+│  │  │  ┌────────────────────────────────────────────────────┐ │  │ │
+│  │  │  │ Canvas with:                                      │ │  │ │
+│  │  │  │ ├── CustomNode (rectangles with styles)          │ │  │ │
+│  │  │  │ ├── IconNode (Lucide icons)                      │ │  │ │
+│  │  │  │ ├── RectangleNode (drawing shapes)               │ │  │ │
+│  │  │  │ ├── Edges (connections)                          │ │  │ │
+│  │  │  │ ├── Background, Controls, MiniMap                │ │  │ │
+│  │  │  │ └── NodePalette (sidebar drag-drop)              │ │  │ │
+│  │  │  └────────────────────────────────────────────────────┘ │  │ │
+│  │  │                   ↓                                     │  │ │
+│  │  │          Drag-Drop Node Creation                       │  │ │
+│  │  │          Handle-based Edge Connection                  │  │ │
+│  │  │          Save to D1 via /api/flows/:id                 │  │ │
+│  │  └─────────────────────────────────────────────────────────┘  │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                      │
+│  Supporting Components:                                              │
+│  ├── NodePalette.tsx - Drag source for node types                  │ │
+│  ├── CustomNode.tsx - Rectangle node renderer                      │ │
+│  ├── IconNode.tsx - Icon-based node renderer                       │ │
+│  ├── RectangleTool.tsx - Canvas drawing tool                       │ │
+│  └── DrawingToolbar.tsx - Tool selection UI                        │ │
+│                                                                      │
+│  UI Libraries:                                                       │ │
+│  ├── Radix UI (dialogs, buttons, inputs, selects)                 │ │
+│  ├── Tailwind CSS v4 (styling)                                    │ │
+│  ├── Lucide React (icons - 1000+ available)                       │ │
+│  └── Sonner (toast notifications)                                 │ │
+└──────────────────────────────────────────────────────────────────────┘
+
+
+PROPOSED EMBEDDABLE ARCHITECTURE
+=================================
+
+OPTION 1: IFRAME EMBED (Recommended First Step)
+──────────────────────────────────────────────
+
+┌──────────────────────────────┐
+│    Your Website (Host)        │
+│  ┌──────────────────────────┐ │
+│  │  <iframe src="...">      │ │
+│  │  ┌────────────────────┐  │ │  Isolated sandbox
+│  │  │  Flow Viewer       │  │ │  No CSS conflicts
+│  │  │  (Read-only)       │  │ │  Full security
+│  │  └────────────────────┘  │ │
+│  └──────────────────────────┘ │
+│           ↕ (postMessage)     │
+└──────────────────────────────┘
+           ↓
+        HTTPS Request
+           ↓
+┌──────────────────────────────────────────────────┐
+│     Cloudflare Workers (FlowBuilder)             │
+│  ┌───────────────────────────────────────────┐  │
+│  │  GET /viewer/:token                       │  │
+│  │  ↓                                         │  │
+│  │  ✓ Verify token (signed JWT or DB lookup)│  │
+│  │  ✓ Fetch flow data from D1                │  │
+│  │  ✓ Sanitize node text content             │  │
+│  │  ✓ Return HTML page with FlowViewer       │  │
+│  └───────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────┘
+
+Embed Code Generated by Builder:
+<iframe 
+  src="https://flows.app/viewer/abc123?token=xyz123"
+  width="100%"
+  height="600"
+  sandbox="allow-same-origin"
+/>
+
+Database Changes:
+  Add public_flows table:
+  ├── id (UUID, PK)
+  ├── flowId (FK to flows)
+  ├── token (signed JWT or random string)
+  ├── createdAt
+  └── expiresAt (optional)
+
+
+OPTION 2: STANDALONE JS BUNDLE
+──────────────────────────────
+
+┌──────────────────────────────┐
+│    Your Website (Host)        │
+│  <script src="flow-viewer.js">│
+│  <div id="my-flow"></div>     │
+│  <script>                     │
+│    FlowViewer.render(         │
+│      {flowId: 'abc', ...},    │
+│      '#my-flow'               │
+│    )                          │
+│  </script>                    │
+│                               │
+│  Direct DOM injection         │
+│  Shared styling context       │
+│  Requires CSS scoping         │
+└──────────────────────────────┘
+           ↕ (fetch)
+        HTTPS Request
+           ↓
+┌──────────────────────────────────────────────────┐
+│     Cloudflare Workers (FlowBuilder)             │
+│  ┌───────────────────────────────────────────┐  │
+│  │  GET /api/flows/public/:flowId            │  │
+│  │  (with API key auth header)               │  │
+│  │  ↓                                         │  │
+│  │  ✓ Verify API key                        │  │
+│  │  ✓ Fetch flow data                        │  │
+│  │  ✓ Return JSON (nodes, edges, viewport)  │  │
+│  └───────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────┘
+
+Bundle Contents:
+  ├── React 19 (~42KB gzipped)
+  ├── React Flow (~120KB gzipped)
+  ├── Tailwind CSS (scoped, ~30-50KB)
+  ├── Radix UI (subset, ~20KB)
+  ├── Lucide React (tree-shaken, ~40KB)
+  └── Custom FlowViewer component
+  Total: ~250KB gzipped
+
+
+HYBRID ARCHITECTURE (RECOMMENDED)
+═════════════════════════════════
+
+Step 1: Extract Shared Viewer Component
+────────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────┐
+│  src/components/FlowViewer.tsx (NEW)                    │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  Pure React Component                            │  │
+│  │  ├── Props: {                                    │  │
+│  │  │   flowData: {                                │  │
+│  │  │     nodes: Node[],                            │  │
+│  │  │     edges: Edge[],                            │  │
+│  │  │     viewport?: {x, y, zoom}                  │  │
+│  │  │   },                                          │  │
+│  │  │   config?: {                                 │  │
+│  │  │     showMiniMap: bool,                       │  │
+│  │  │     showControls: bool,                      │  │
+│  │  │     interactive: bool,                       │  │
+│  │  │   }                                           │  │
+│  │  │ }                                              │  │
+│  │  ├── No routing                                  │  │
+│  │  ├── No auth                                     │  │
+│  │  ├── No editing UI (palette, toolbars)          │  │
+│  │  └── Renders: @xyflow/react with CustomNode    │  │
+│  │       and IconNode components                   │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+          ↑                                      ↑
+          Used by:                              Used by:
+  ┌──────────────────────┐           ┌──────────────────────┐
+  │  Iframe Route        │           │  UMD Bundle          │
+  │  /viewer/:token      │           │  flow-viewer.umd.js  │
+  └──────────────────────┘           └──────────────────────┘
+
+
+Step 2: Create Public Viewer Route
+──────────────────────────────────
+
+src/routes/viewer/$token.tsx (NEW)
+├── GET request with token param
+├── Call /api/flows/public/$token
+├── Receive: {flow, flowData, nodeTypes}
+├── Render: <FlowViewer flowData={flowData} config={{...}} />
+├── Security:
+│   ├── Token validation (JWT or DB lookup)
+│   ├── Content sanitization
+│   ├── CORS headers for embedding
+│   ├── Rate limiting
+│   └── XSS prevention
+└── Full HTML page (iframe-friendly)
+
+
+Step 3: Create Embed Generator in Builder
+──────────────────────────────────────────
+
+src/components/FlowEmbedGenerator.tsx (NEW)
+├── "Generate Embed" button in FlowBuilder toolbar
+├── Modal with:
+│   ├── Token generation form
+│   ├── Expiration options
+│   ├── Domain whitelist
+│   ├── Copy-to-clipboard buttons:
+│   │   ├── Iframe code
+│   │   └── API code
+│   ├── Live preview
+│   └── Token management (revoke, rotate)
+└── Stores tokens in D1 public_flows table
+
+
+Step 4: Build Standalone UMD Bundle
+───────────────────────────────────
+
+vite.config.ts (MODIFIED)
+├── Add entry point: src/viewer-bundle.ts
+├── Build config for UMD format
+├── External deps: React, ReactDOM
+├── Output: dist/flow-viewer.umd.js (~250KB gzipped)
+
+src/viewer-bundle.ts (NEW)
+├── Export FlowViewer component
+├── Export API client (fetch wrapper)
+├── Export types (TypeScript definitions)
+├── Global: window.FlowViewer = {render, Component, api}
+
+CSS Strategy:
+├── Option A: Emotion/Styled - CSS-in-JS (no conflicts)
+├── Option B: PostCSS namespace (.flow-viewer-* prefix)
+├── Option C: ShadowDOM encapsulation
+└── Option D: CSS Layer with @layer isolation
+
+
+DATA FLOW DIAGRAMS
+═════════════════════════════════════════════════
+
+Editor → Database:
+  User clicks "Save Flow"
+         ↓
+  FlowBuilder.handleSave()
+         ↓
+  flowsApi.save(flowId, name, nodes, edges)
+         ↓
+  PUT /api/flows/:id
+         ↓
+  Cloudflare Worker route handler
+         ↓
+  db.update(flows).set({...})
+  db.update(flowData).set({nodes, edges, viewport})
+         ↓
+  Cloudflare D1 SQLite database
+         ↓
+  Success response
+         ↓
+  localStorage backup + toast notification
+
+
+Public Viewer Flow:
+  User/embed clicks iframe URL
+         ↓
+  GET /viewer/:token
+         ↓
+  Cloudflare Worker:
+    ├── Verify token signature
+    ├── Fetch flow from D1
+    ├── Sanitize node content
+    └── Render HTML + React FlowViewer
+         ↓
+  Browser renders iframe
+         ↓
+  @xyflow/react displays nodes + edges
+         ↓
+  User can pan/zoom (read-only)
+
+
+API Security Flow:
+  Host website requests public flow data
+         ↓
+  XHR/Fetch to GET /api/flows/public/:flowId
+         ↓
+  Headers: {Authorization: 'Bearer API_KEY'}
+         ↓
+  Cloudflare Worker:
+    ├── Extract API key from header
+    ├── Verify against verified_api_keys table
+    ├── Check rate limit (1000 req/hour)
+    ├── Fetch flow data
+    └── Filter sensitive fields
+         ↓
+  Return JSON: {nodes, edges, viewport, name}
+         ↓
+  JavaScript bundle renders in container
+
+
+================================================================================
+COMPONENT HIERARCHY FOR EMBEDS
+================================================================================
+
+IFRAME VERSION:
+  <FlowViewer />
+    ├── ReactFlow (from @xyflow/react)
+    │   ├── CustomNode (memoized)
+    │   │   ├── NodeResizer
+    │   │   ├── Handle (top, right, bottom, left)
+    │   │   └── Styled div (using inline styles)
+    │   ├── IconNode (memoized)
+    │   │   ├── Lucide Icon component
+    │   │   ├── Labels
+    │   │   └── Handles
+    │   ├── Background
+    │   ├── Controls (zoom, fit view)
+    │   └── MiniMap
+    └── Tailwind CSS (scoped to iframe)
+
+STANDALONE BUNDLE VERSION:
+  window.FlowViewer.render({flowData, config}, '#container')
+    └── Root React component
+        └── FlowViewer (with CSS-in-JS styling)
+            ├── ReactFlow
+            │   └── [same node components]
+            └── CSS-in-JS emotion/styled-components
+
+
+================================================================================
+FILE CHANGES SUMMARY
+================================================================================
+
+NEW FILES:
+  └── src/
+      ├── components/
+      │   ├── FlowViewer.tsx                 (Read-only viewer, ~300 lines)
+      │   ├── FlowEmbedGenerator.tsx         (Embed UI, ~250 lines)
+      │   └── PublicFlowViewer.tsx           (Page wrapper, ~100 lines)
+      ├── lib/
+      │   ├── flow-viewer.ts                 (Viewer logic, ~100 lines)
+      │   ├── embed-tokens.ts                (JWT/signing, ~150 lines)
+      │   └── public-api.ts                  (Public fetch client, ~100 lines)
+      ├── routes/
+      │   ├── viewer/
+      │   │   └── $token.tsx                 (Viewer route, ~150 lines)
+      │   └── api/flows/public/
+      │       └── $token.ts                  (Public API, ~200 lines)
+      └── types/
+          └── viewer.ts                      (Types, ~50 lines)
+
+MODIFIED FILES:
+  ├── src/components/FlowBuilder.tsx        (+50 lines to add embed button)
+  ├── src/lib/api.ts                        (+30 lines for public endpoints)
+  ├── src/db/schema.ts                      (+30 lines for public_flows table)
+  ├── vite.config.ts                        (+15 lines for UMD build)
+  └── package.json                          (+1 script for build:embed)
+
+TOTAL NEW CODE: ~1,500 lines
+REFACTORING: Minimal (extract FlowViewer from FlowBuilder)
+
+
+================================================================================
+SECURITY CHECKLIST
+================================================================================
+
+Authentication & Authorization:
+  ✓ Token-based access (JWT with expiration)
+  ✓ API key system for programmatic access
+  ✓ Rate limiting (per IP, per key)
+  ✓ CORS origin verification
+  ✓ Same-Site cookie policy
+
+Data Protection:
+  ✓ Never expose userId in public responses
+  ✓ Filter flow metadata (remove createdAt, updatedAt, author)
+  ✓ Validate node data structure before rendering
+  ✓ Sanitize node labels (XSS prevention)
+  ✓ HTML encode all user text
+
+XSS Prevention:
+  ✓ Use React's built-in escaping
+  ✓ Avoid dangerouslySetInnerHTML
+  ✓ Validate icon names from Lucide library only
+  ✓ CSP headers on viewer route
+  ✓ iframe sandbox attributes
+
+CSRF Prevention:
+  ✓ SameSite=Lax/Strict on cookies
+  ✓ Origin header verification
+  ✓ No state-changing GETs (all mutations via POST/PUT/DELETE)
+  ✓ CORS preflight requirements respected
+
+Network Security:
+  ✓ HTTPS only (Cloudflare enforces)
+  ✓ CSP headers
+  ✓ X-Frame-Options for non-iframe content
+  ✓ X-Content-Type-Options: nosniff
+  ✓ Secure headers middleware
+
+Token Management:
+  ✓ Tokens stored as hashed values (bcrypt or similar)
+  ✓ Expiration enforcement (optional TTL)
+  ✓ Revocation capability
+  ✓ Rotation mechanism
+  ✓ Audit logging of token creation/use
+
+
+================================================================================

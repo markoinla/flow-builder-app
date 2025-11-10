@@ -10,9 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BuilderIndexRouteImport } from './routes/builder/index'
+import { Route as AuthSignupRouteImport } from './routes/auth/signup'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as ApiNodeTypesIndexRouteImport } from './routes/api/node-types/index'
+import { Route as ApiFlowsIndexRouteImport } from './routes/api/flows/index'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
+import { Route as ApiNodeTypesIdRouteImport } from './routes/api/node-types/$id'
+import { Route as ApiFlowsIdRouteImport } from './routes/api/flows/$id'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
@@ -21,6 +29,31 @@ import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ss
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderIndexRoute = BuilderIndexRouteImport.update({
+  id: '/builder/',
+  path: '/builder/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/auth/signup',
+  path: '/auth/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNodeTypesIndexRoute = ApiNodeTypesIndexRouteImport.update({
+  id: '/api/node-types/',
+  path: '/api/node-types/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFlowsIndexRoute = ApiFlowsIndexRouteImport.update({
+  id: '/api/flows/',
+  path: '/api/flows/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
@@ -36,6 +69,21 @@ const DemoStartApiRequestRoute = DemoStartApiRequestRouteImport.update({
 const DemoApiNamesRoute = DemoApiNamesRouteImport.update({
   id: '/demo/api/names',
   path: '/demo/api/names',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNodeTypesIdRoute = ApiNodeTypesIdRouteImport.update({
+  id: '/api/node-types/$id',
+  path: '/api/node-types/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFlowsIdRoute = ApiFlowsIdRouteImport.update({
+  id: '/api/flows/$id',
+  path: '/api/flows/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
@@ -61,9 +109,17 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/builder': typeof BuilderIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/flows/$id': typeof ApiFlowsIdRoute
+  '/api/node-types/$id': typeof ApiNodeTypesIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/flows': typeof ApiFlowsIndexRoute
+  '/api/node-types': typeof ApiNodeTypesIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -71,9 +127,17 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/builder': typeof BuilderIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/flows/$id': typeof ApiFlowsIdRoute
+  '/api/node-types/$id': typeof ApiNodeTypesIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/flows': typeof ApiFlowsIndexRoute
+  '/api/node-types': typeof ApiNodeTypesIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -82,9 +146,17 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/builder/': typeof BuilderIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/flows/$id': typeof ApiFlowsIdRoute
+  '/api/node-types/$id': typeof ApiNodeTypesIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/flows/': typeof ApiFlowsIndexRoute
+  '/api/node-types/': typeof ApiNodeTypesIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -94,9 +166,17 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/builder'
+    | '/api/auth/$'
+    | '/api/flows/$id'
+    | '/api/node-types/$id'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/flows'
+    | '/api/node-types'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -104,9 +184,17 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/builder'
+    | '/api/auth/$'
+    | '/api/flows/$id'
+    | '/api/node-types/$id'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/flows'
+    | '/api/node-types'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -114,9 +202,17 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/builder/'
+    | '/api/auth/$'
+    | '/api/flows/$id'
+    | '/api/node-types/$id'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/flows/'
+    | '/api/node-types/'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -125,9 +221,17 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+  BuilderIndexRoute: typeof BuilderIndexRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiFlowsIdRoute: typeof ApiFlowsIdRoute
+  ApiNodeTypesIdRoute: typeof ApiNodeTypesIdRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
   DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute
   DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
+  ApiFlowsIndexRoute: typeof ApiFlowsIndexRoute
+  ApiNodeTypesIndexRoute: typeof ApiNodeTypesIndexRoute
   DemoStartSsrDataOnlyRoute: typeof DemoStartSsrDataOnlyRoute
   DemoStartSsrFullSsrRoute: typeof DemoStartSsrFullSsrRoute
   DemoStartSsrSpaModeRoute: typeof DemoStartSsrSpaModeRoute
@@ -141,6 +245,41 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder/': {
+      id: '/builder/'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/auth/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/node-types/': {
+      id: '/api/node-types/'
+      path: '/api/node-types'
+      fullPath: '/api/node-types'
+      preLoaderRoute: typeof ApiNodeTypesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/flows/': {
+      id: '/api/flows/'
+      path: '/api/flows'
+      fullPath: '/api/flows'
+      preLoaderRoute: typeof ApiFlowsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/start/server-funcs': {
@@ -162,6 +301,27 @@ declare module '@tanstack/react-router' {
       path: '/demo/api/names'
       fullPath: '/demo/api/names'
       preLoaderRoute: typeof DemoApiNamesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/node-types/$id': {
+      id: '/api/node-types/$id'
+      path: '/api/node-types/$id'
+      fullPath: '/api/node-types/$id'
+      preLoaderRoute: typeof ApiNodeTypesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/flows/$id': {
+      id: '/api/flows/$id'
+      path: '/api/flows/$id'
+      fullPath: '/api/flows/$id'
+      preLoaderRoute: typeof ApiFlowsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/start/ssr/': {
@@ -197,9 +357,17 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthSignupRoute: AuthSignupRoute,
+  BuilderIndexRoute: BuilderIndexRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiFlowsIdRoute: ApiFlowsIdRoute,
+  ApiNodeTypesIdRoute: ApiNodeTypesIdRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,
   DemoStartApiRequestRoute: DemoStartApiRequestRoute,
   DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
+  ApiFlowsIndexRoute: ApiFlowsIndexRoute,
+  ApiNodeTypesIndexRoute: ApiNodeTypesIndexRoute,
   DemoStartSsrDataOnlyRoute: DemoStartSsrDataOnlyRoute,
   DemoStartSsrFullSsrRoute: DemoStartSsrFullSsrRoute,
   DemoStartSsrSpaModeRoute: DemoStartSsrSpaModeRoute,
