@@ -17,6 +17,7 @@ interface NodeTypeEditorProps {
   editingId: string | null;
   initialData: NodeTypeFormData;
   onSave: (nodeType: CustomNodeType) => void;
+  onDelete?: (id: string) => void;
 }
 
 export interface NodeTypeFormData {
@@ -53,6 +54,7 @@ export function NodeTypeEditor({
   editingId,
   initialData,
   onSave,
+  onDelete,
 }: NodeTypeEditorProps) {
   const [formData, setFormData] = useState<NodeTypeFormData>(initialData);
 
@@ -105,6 +107,13 @@ export function NodeTypeEditor({
 
     onSave(nodeType);
     onOpenChange(false);
+  };
+
+  const handleDelete = () => {
+    if (editingId && onDelete) {
+      onDelete(editingId);
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -518,13 +527,20 @@ export function NodeTypeEditor({
           </div>
         </Tabs>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!formData.name.trim()}>
-            {editingId ? 'Save Changes' : 'Create'}
-          </Button>
+        <DialogFooter className="flex justify-between items-center">
+          {editingId && onDelete && (
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={!formData.name.trim()}>
+              {editingId ? 'Save Changes' : 'Create'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

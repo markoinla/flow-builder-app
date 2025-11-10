@@ -145,10 +145,45 @@ code {
 
 @keyframes dashdraw-reverse {
   from {
-    stroke-dashoffset: 10;
+    stroke-dashoffset: 0;
   }
   to {
-    stroke-dashoffset: 0;
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Solid line pulse animations - moving circles along the path */
+@keyframes pulse-move-forward {
+  0% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-move-backward {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
   }
 }
 

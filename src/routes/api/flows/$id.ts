@@ -3,6 +3,7 @@ import { json } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { createDb, flows, flowData } from '../../../db';
 import { eq, and } from 'drizzle-orm';
+import { createAuth } from '../../../lib/auth';
 
 /**
  * Flow Individual API Endpoints
@@ -16,18 +17,25 @@ export const Route = createFileRoute('/api/flows/$id')({
   server: {
     handlers: {
       // GET - Get a specific flow with its data
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
         try {
           const db = createDb(env.DB);
+          const auth = createAuth(env.DB);
           const { id } = params;
 
-          // TODO: Get userId from session/auth
-          const userId = 'temp-user-id';
+          // Get user session
+          const session = await auth.api.getSession({
+            headers: request.headers
+          });
+
+          if (!session?.user?.id) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
+          }
 
           const flow = await db
             .select()
             .from(flows)
-            .where(and(eq(flows.id, id), eq(flows.userId, userId)))
+            .where(and(eq(flows.id, id), eq(flows.userId, session.user.id)))
             .limit(1);
 
           if (!flow || flow.length === 0) {
@@ -54,11 +62,25 @@ export const Route = createFileRoute('/api/flows/$id')({
       PUT: async ({ request, params }) => {
         try {
           const db = createDb(env.DB);
-          const body = await request.json();
+          const auth = createAuth(env.DB);
           const { id } = params;
 
-          // TODO: Get userId from session/auth
-          const userId = 'temp-user-id';
+          // Get user session
+          const session = await auth.api.getSession({
+            headers: request.headers
+          });
+
+          if (!session?.user?.id) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
+          }
+
+          const body = await request.json() as {
+            name?: string;
+            description?: string;
+            nodes?: any[];
+            edges?: any[];
+            viewport?: { x: number; y: number; zoom: number };
+          };
 
           // Update flow metadata
           if (body.name || body.description) {
@@ -69,19 +91,28 @@ export const Route = createFileRoute('/api/flows/$id')({
                 description: body.description,
                 updatedAt: new Date(),
               })
-              .where(and(eq(flows.id, id), eq(flows.userId, userId)));
+              .where(and(eq(flows.id, id), eq(flows.userId, session.user.id)));
           }
 
           // Update flow data (nodes, edges, viewport)
-          if (body.nodes || body.edges || body.viewport) {
+          if (body.nodes !== undefined || body.edges !== undefined || body.viewport !== undefined) {
+            const updateData: any = {
+              updatedAt: new Date(),
+            };
+
+            if (body.nodes !== undefined) {
+              updateData.nodes = body.nodes;
+            }
+            if (body.edges !== undefined) {
+              updateData.edges = body.edges;
+            }
+            if (body.viewport !== undefined) {
+              updateData.viewport = body.viewport;
+            }
+
             await db
               .update(flowData)
-              .set({
-                nodes: body.nodes,
-                edges: body.edges,
-                viewport: body.viewport,
-                updatedAt: new Date(),
-              })
+              .set(updateData)
               .where(eq(flowData.flowId, id));
           }
 
@@ -93,18 +124,25 @@ export const Route = createFileRoute('/api/flows/$id')({
       },
 
       // DELETE - Delete a flow
-      DELETE: async ({ params }) => {
+      DELETE: async ({ params, request }) => {
         try {
           const db = createDb(env.DB);
+          const auth = createAuth(env.DB);
           const { id } = params;
 
-          // TODO: Get userId from session/auth
-          const userId = 'temp-user-id';
+          // Get user session
+          const session = await auth.api.getSession({
+            headers: request.headers
+          });
+
+          if (!session?.user?.id) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
+          }
 
           // Delete flow (flowData will cascade delete due to foreign key)
           await db
             .delete(flows)
-            .where(and(eq(flows.id, id), eq(flows.userId, userId)));
+            .where(and(eq(flows.id, id), eq(flows.userId, session.user.id)));
 
           return json({ success: true });
         } catch (error) {

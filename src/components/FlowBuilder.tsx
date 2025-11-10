@@ -12,12 +12,15 @@ import {
   type Node,
   Panel,
   type NodeTypes,
+  type EdgeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { toast } from 'sonner';
 import { CustomNode } from './CustomNode';
 import { IconNode } from './IconNode';
 import { RectangleNode } from './RectangleNode';
 import { RectangleTool } from './RectangleTool';
+import { AnimatedEdge } from './AnimatedEdge';
 import { NodePalette } from './NodePalette';
 import { DrawingToolbar } from './DrawingToolbar';
 import { RectangleEditDialog } from './NodeContextMenu';
@@ -30,6 +33,7 @@ import { DEFAULT_NODE_TYPES, type CustomNodeType, type HandleConfig } from '../t
 import { nodeTypesApi, flowsApi } from '../lib/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,18 +61,24 @@ const nodeTypes: NodeTypes = {
   rectangle: RectangleNode,
 };
 
+const edgeTypes: EdgeTypes = {
+  animated: AnimatedEdge,
+};
+
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
 interface FlowBuilderProps {
   onSave?: (nodes: Node[], edges: Edge[]) => void;
+  flowId?: string;
 }
 
-export function FlowBuilder({ onSave }: FlowBuilderProps) {
+export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [flowName, setFlowName] = useState('Untitled Flow');
+  const [flowDescription, setFlowDescription] = useState('');
   const [flowId, setFlowId] = useState<string | null>(null);
   const [customNodeTypes, setCustomNodeTypes] = useState<CustomNodeType[]>(DEFAULT_NODE_TYPES);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
@@ -156,24 +166,80 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
     loadNodeTypes();
   }, []);
 
-  // Load saved flow from localStorage (temporary until we have flow selection UI)
+  // Migrate edge animations from old inverted keyframes
+  const migrateEdgeAnimations = useCallback((edges: Edge[]) => {
+    return edges.map((edge) => {
+      // If edge has animation in style but no animationDirection in data, it's likely old data
+      if (edge.style?.animation && !edge.data?.animationDirection) {
+        const animation = edge.style.animation;
+        // Old 'dashdraw' was actually backward, old 'dashdraw-reverse' was actually forward
+        // Now they're fixed, so we need to swap the stored direction
+        if (animation.includes('dashdraw-reverse')) {
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              animationDirection: 'forward', // Old reverse is now forward
+            },
+          };
+        } else if (animation.includes('dashdraw')) {
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              animationDirection: 'backward', // Old forward is now backward
+            },
+          };
+        }
+      }
+      return edge;
+    });
+  }, []);
+
+  // Load flow from API or localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedFlow = localStorage.getItem('currentFlow');
-      if (savedFlow) {
+    async function loadFlow() {
+      // If flowId is provided via prop, load from API
+      if (initialFlowId) {
         try {
-          const { nodes: savedNodes, edges: savedEdges, flowId: savedFlowId } = JSON.parse(savedFlow);
-          if (savedNodes && savedEdges) {
-            setNodes(savedNodes);
-            setEdges(savedEdges);
-            setFlowId(savedFlowId || null);
+          const { flow, flowData } = await flowsApi.get(initialFlowId);
+
+          if (flowData) {
+            setNodes(flowData.nodes || []);
+            // Migrate old animation directions
+            setEdges(migrateEdgeAnimations(flowData.edges || []));
+            setFlowName(flow.name);
+            setFlowDescription(flow.description || '');
+            setFlowId(flow.id);
           }
         } catch (error) {
-          console.error('Failed to load saved flow:', error);
+          console.error('Failed to load flow from API:', error);
+          setError('Failed to load workflow');
+        }
+        return;
+      }
+
+      // Otherwise, try to load from localStorage (legacy support)
+      if (typeof window !== 'undefined') {
+        const savedFlow = localStorage.getItem('currentFlow');
+        if (savedFlow) {
+          try {
+            const { nodes: savedNodes, edges: savedEdges, flowId: savedFlowId } = JSON.parse(savedFlow);
+            if (savedNodes && savedEdges) {
+              setNodes(savedNodes);
+              // Migrate old animation directions
+              setEdges(migrateEdgeAnimations(savedEdges));
+              setFlowId(savedFlowId || null);
+            }
+          } catch (error) {
+            console.error('Failed to load saved flow from localStorage:', error);
+          }
         }
       }
     }
-  }, [setNodes, setEdges]);
+
+    loadFlow();
+  }, [initialFlowId, setNodes, setEdges, migrateEdgeAnimations]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -194,17 +260,15 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
 
       // Handle custom and icon nodes with context menu
       if (node.type === 'custom' || node.type === 'icon') {
-        const pane = reactFlowWrapper.current?.getBoundingClientRect();
-        if (!pane) return;
-
+        // Use viewport coordinates for fixed positioning
         setNodeContextMenu({
           id: node.id,
-          top: event.clientY - pane.top,
-          left: event.clientX - pane.left,
+          top: event.clientY,
+          left: event.clientX,
         });
       }
     },
-    [reactFlowWrapper]
+    []
   );
 
   const handleUpdateRectangle = useCallback((nodeId: string, data: any) => {
@@ -253,6 +317,7 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
                 ...edge.data,
                 animationDirection: data.animationDirection,
                 animationSpeed: data.animationSpeed,
+                edgeType: data.edgeType,
               },
             }
           : edge
@@ -389,7 +454,7 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
 
   const handleSave = useCallback(async () => {
     try {
-      const savedFlowId = await flowsApi.save(flowId, flowName, nodes, edges);
+      const savedFlowId = await flowsApi.save(flowId, flowName, flowDescription, nodes, edges);
       setFlowId(savedFlowId);
 
       // Also save to localStorage as backup
@@ -399,14 +464,17 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
         flowId: savedFlowId,
       }));
 
+      toast.success('Workflow saved to database successfully!');
+
       if (onSave) {
         onSave(nodes, edges);
       }
     } catch (err) {
       console.error('Failed to save flow:', err);
       setError('Failed to save flow');
+      toast.error('Failed to save workflow');
     }
-  }, [flowId, flowName, nodes, edges, onSave]);
+  }, [flowId, flowName, flowDescription, nodes, edges, onSave]);
 
   const handleClear = useCallback(() => {
     setShowClearDialog(true);
@@ -423,6 +491,7 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
       setEdges([]);
       setFlowId(null);
       setFlowName('Untitled Flow');
+      setFlowDescription('');
       localStorage.removeItem('currentFlow');
       setShowClearDialog(false);
     } catch (err) {
@@ -639,35 +708,46 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
       {/* Main Canvas Area */}
       <div className="flex-1 flex flex-col">
         {/* Toolbar */}
-        <div className="border-b bg-background p-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Input
-              type="text"
-              value={flowName}
-              onChange={(e) => setFlowName(e.target.value)}
-              placeholder="Flow name"
-              className="w-64"
-            />
-            <DrawingToolbar
-              isRectangleActive={isRectangleActive}
-              onToggle={setIsRectangleActive}
-            />
-            <Button
-              onClick={handleClear}
-              variant="outline"
-            >
-              <Eraser className="h-4 w-4 mr-2" />
-              Clear Canvas
-            </Button>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {nodes.length} nodes, {edges.length} edges
-            </span>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Flow
-            </Button>
+        <div className="border-b bg-background p-4 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex flex-col gap-2 flex-1 max-w-md">
+                <Input
+                  type="text"
+                  value={flowName}
+                  onChange={(e) => setFlowName(e.target.value)}
+                  placeholder="Flow name"
+                  className="w-full"
+                />
+                <Textarea
+                  value={flowDescription}
+                  onChange={(e) => setFlowDescription(e.target.value)}
+                  placeholder="Flow description (optional)"
+                  className="w-full resize-none"
+                  rows={2}
+                />
+              </div>
+              <DrawingToolbar
+                isRectangleActive={isRectangleActive}
+                onToggle={setIsRectangleActive}
+              />
+              <Button
+                onClick={handleClear}
+                variant="outline"
+              >
+                <Eraser className="h-4 w-4 mr-2" />
+                Clear Canvas
+              </Button>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                {nodes.length} nodes, {edges.length} edges
+              </span>
+              <Button onClick={handleSave}>
+                <Save className="h-4 w-4 mr-2" />
+                Save Flow
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -685,6 +765,7 @@ export function FlowBuilder({ onSave }: FlowBuilderProps) {
             onNodeContextMenu={onNodeContextMenu}
             onEdgeContextMenu={onEdgeContextMenu}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
             attributionPosition="bottom-left"
           >

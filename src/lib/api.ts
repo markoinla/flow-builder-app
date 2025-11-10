@@ -128,16 +128,17 @@ export const flowsApi = {
   async save(
     flowId: string | null,
     flowName: string,
+    flowDescription: string,
     nodes: Node[],
     edges: Edge[]
   ): Promise<string> {
     if (flowId) {
       // Update existing flow
-      await flowsApi.update(flowId, { name: flowName, nodes, edges });
+      await flowsApi.update(flowId, { name: flowName, description: flowDescription, nodes, edges });
       return flowId;
     } else {
       // Create new flow
-      const { flow } = await flowsApi.create({ name: flowName, nodes, edges });
+      const { flow } = await flowsApi.create({ name: flowName, description: flowDescription, nodes, edges });
       return flow.id;
     }
   },

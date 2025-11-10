@@ -235,6 +235,7 @@ export function NodePalette({
         editingId={editingId}
         initialData={formData}
         onSave={handleSave}
+        onDelete={onDeleteNodeType}
       />
     </>
   );

@@ -69,7 +69,7 @@ export function NodeContextMenu({
     <div
       ref={menuRef}
       style={{
-        position: 'absolute',
+        position: 'fixed',
         top: `${top}px`,
         left: `${left}px`,
         zIndex: 1000,

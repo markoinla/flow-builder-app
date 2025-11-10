@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FlowsIndexRouteImport } from './routes/flows/index'
 import { Route as BuilderIndexRouteImport } from './routes/builder/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
@@ -29,6 +30,11 @@ import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ss
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FlowsIndexRoute = FlowsIndexRouteImport.update({
+  id: '/flows/',
+  path: '/flows/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BuilderIndexRoute = BuilderIndexRouteImport.update({
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/builder': typeof BuilderIndexRoute
+  '/flows': typeof FlowsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/flows/$id': typeof ApiFlowsIdRoute
   '/api/node-types/$id': typeof ApiNodeTypesIdRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/builder': typeof BuilderIndexRoute
+  '/flows': typeof FlowsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/flows/$id': typeof ApiFlowsIdRoute
   '/api/node-types/$id': typeof ApiNodeTypesIdRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/builder/': typeof BuilderIndexRoute
+  '/flows/': typeof FlowsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/flows/$id': typeof ApiFlowsIdRoute
   '/api/node-types/$id': typeof ApiNodeTypesIdRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/builder'
+    | '/flows'
     | '/api/auth/$'
     | '/api/flows/$id'
     | '/api/node-types/$id'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/builder'
+    | '/flows'
     | '/api/auth/$'
     | '/api/flows/$id'
     | '/api/node-types/$id'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/builder/'
+    | '/flows/'
     | '/api/auth/$'
     | '/api/flows/$id'
     | '/api/node-types/$id'
@@ -224,6 +236,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
   BuilderIndexRoute: typeof BuilderIndexRoute
+  FlowsIndexRoute: typeof FlowsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiFlowsIdRoute: typeof ApiFlowsIdRoute
   ApiNodeTypesIdRoute: typeof ApiNodeTypesIdRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/flows/': {
+      id: '/flows/'
+      path: '/flows'
+      fullPath: '/flows'
+      preLoaderRoute: typeof FlowsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/builder/': {
@@ -360,6 +380,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
   BuilderIndexRoute: BuilderIndexRoute,
+  FlowsIndexRoute: FlowsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiFlowsIdRoute: ApiFlowsIdRoute,
   ApiNodeTypesIdRoute: ApiNodeTypesIdRoute,

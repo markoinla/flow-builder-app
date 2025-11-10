@@ -10,13 +10,26 @@ import {
   SquareFunction,
   StickyNote,
   X,
+  FolderOpen,
+  PenTool,
+  LogOut,
+  LogIn,
+  UserPlus,
+  User,
 } from 'lucide-react'
+import { useSession, signOut } from '../lib/auth-client'
 
 export default function Header() {
+  const { data: session } = useSession()
   const [isOpen, setIsOpen] = useState(false)
   const [groupedExpanded, setGroupedExpanded] = useState<
     Record<string, boolean>
   >({})
+
+  const handleSignOut = async () => {
+    await signOut()
+    setIsOpen(false)
+  }
 
   return (
     <>
@@ -68,6 +81,34 @@ export default function Header() {
             <Home size={20} />
             <span className="font-medium">Home</span>
           </Link>
+
+          <Link
+            to="/flows"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <FolderOpen size={20} />
+            <span className="font-medium">My Workflows</span>
+          </Link>
+
+          <Link
+            to="/builder"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+            activeProps={{
+              className:
+                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+            }}
+          >
+            <PenTool size={20} />
+            <span className="font-medium">Flow Builder</span>
+          </Link>
+
+          <div className="my-4 border-t border-gray-700"></div>
 
           {/* Demo Links Start */}
 
@@ -170,6 +211,54 @@ export default function Header() {
           )}
 
           {/* Demo Links End */}
+
+          <div className="my-4 border-t border-gray-700"></div>
+
+          {/* Auth Links */}
+          {session?.user ? (
+            <>
+              <div className="p-3 bg-gray-800 rounded-lg mb-2">
+                <div className="flex items-center gap-2 text-gray-300">
+                  <User size={16} />
+                  <span className="text-sm truncate">{session.user.email}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2 w-full text-left"
+              >
+                <LogOut size={20} />
+                <span className="font-medium">Sign Out</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/auth/login"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+                activeProps={{
+                  className:
+                    'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+                }}
+              >
+                <LogIn size={20} />
+                <span className="font-medium">Log In</span>
+              </Link>
+              <Link
+                to="/auth/signup"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
+                activeProps={{
+                  className:
+                    'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
+                }}
+              >
+                <UserPlus size={20} />
+                <span className="font-medium">Sign Up</span>
+              </Link>
+            </>
+          )}
         </nav>
       </aside>
     </>

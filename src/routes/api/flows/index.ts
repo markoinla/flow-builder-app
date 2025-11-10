@@ -3,6 +3,7 @@ import { json } from '@tanstack/react-start';
 import { env } from 'cloudflare:workers';
 import { createDb, flows, flowData } from '../../../db';
 import { eq } from 'drizzle-orm';
+import { createAuth } from '../../../lib/auth';
 
 /**
  * Flows API Endpoints
@@ -18,14 +19,21 @@ export const Route = createFileRoute('/api/flows/')({
       GET: async ({ request }) => {
         try {
           const db = createDb(env.DB);
+          const auth = createAuth(env.DB);
 
-          // TODO: Get userId from session/auth
-          const userId = 'temp-user-id';
+          // Get user session
+          const session = await auth.api.getSession({
+            headers: request.headers
+          });
+
+          if (!session?.user?.id) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
+          }
 
           const userFlows = await db
             .select()
             .from(flows)
-            .where(eq(flows.userId, userId));
+            .where(eq(flows.userId, session.user.id));
 
           return json(userFlows);
         } catch (error) {
@@ -38,10 +46,24 @@ export const Route = createFileRoute('/api/flows/')({
       POST: async ({ request }) => {
         try {
           const db = createDb(env.DB);
-          const body = await request.json();
+          const auth = createAuth(env.DB);
 
-          // TODO: Get userId from session/auth
-          const userId = 'temp-user-id';
+          // Get user session
+          const session = await auth.api.getSession({
+            headers: request.headers
+          });
+
+          if (!session?.user?.id) {
+            return json({ error: 'Unauthorized' }, { status: 401 });
+          }
+
+          const body = await request.json() as {
+            name?: string;
+            description?: string;
+            nodes?: any[];
+            edges?: any[];
+            viewport?: { x: number; y: number; zoom: number };
+          };
 
           const flowId = crypto.randomUUID();
           const flowDataId = crypto.randomUUID();
@@ -49,7 +71,7 @@ export const Route = createFileRoute('/api/flows/')({
           // Create flow metadata
           const newFlow = {
             id: flowId,
-            userId,
+            userId: session.user.id,
             name: body.name || 'Untitled Flow',
             description: body.description || null,
           };

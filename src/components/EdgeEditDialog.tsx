@@ -13,13 +13,14 @@ export interface EdgeStyleData {
   stroke?: string;
   strokeWidth?: number;
   animated?: boolean;
-  type?: 'default' | 'straight' | 'step' | 'smoothstep';
+  type?: 'default' | 'straight' | 'step' | 'smoothstep' | 'animated';
   style?: {
     strokeDasharray?: string;
     animation?: string;
   };
   animationDirection?: 'forward' | 'backward';
   animationSpeed?: number;
+  edgeType?: string; // Original edge type for path calculation
 }
 
 interface EdgeEditDialogProps {
@@ -54,10 +55,23 @@ export function EdgeEditDialog({
     if (edge) {
       const currentStroke = edge.style?.stroke || '#b1b1b7';
       const currentStrokeWidth = edge.style?.strokeWidth || 2;
-      const currentType = edge.type || 'default';
+      // If edge type is 'animated', get the original type from edge.data.edgeType
+      const currentType = edge.type === 'animated' ? (edge.data?.edgeType as string || 'default') : (edge.type || 'default');
       const currentStrokeDasharray = edge.style?.strokeDasharray;
       const currentAnimation = edge.style?.animation;
-      const currentAnimationDirection = (edge.data?.animationDirection as 'forward' | 'backward') || 'forward';
+
+      // Determine animation direction from the CSS animation string if present
+      let detectedDirection: 'forward' | 'backward' = 'forward';
+      if (currentAnimation) {
+        if (currentAnimation.includes('reverse')) {
+          detectedDirection = 'backward';
+        } else if (currentAnimation.includes('dashdraw')) {
+          detectedDirection = 'forward';
+        }
+      }
+
+      // Prefer edge.data direction, fall back to detected direction
+      const currentAnimationDirection = (edge.data?.animationDirection as 'forward' | 'backward') || detectedDirection;
       const currentAnimationSpeed = (edge.data?.animationSpeed as number) || 1;
 
       // Determine line style from strokeDasharray
@@ -68,8 +82,10 @@ export function EdgeEditDialog({
         detectedLineStyle = 'dotted';
       }
 
-      // Determine if animated - either from edge.animated (solid) or from animation CSS property (dashed/dotted)
-      const isAnimated = edge.animated || (currentAnimation && currentAnimation.includes('dashdraw'));
+      // Determine if animated - check for 'animated' edge type, edge.animated, or animation CSS
+      const isAnimated = edge.type === 'animated' ||
+                        edge.animated ||
+                        (currentAnimation && currentAnimation.includes('dashdraw'));
 
       setLineStyle(detectedLineStyle);
       setFormData({
@@ -94,7 +110,7 @@ export function EdgeEditDialog({
         strokeDasharray = '1 5';
       }
 
-      // Build animation if animated
+      // Build animation if animated (only for dashed/dotted)
       let animation: string | undefined = undefined;
       if (formData.animated && (lineStyle === 'dashed' || lineStyle === 'dotted')) {
         const duration = 1 / (formData.animationSpeed || 1);
@@ -105,17 +121,21 @@ export function EdgeEditDialog({
         }
       }
 
+      // Determine edge type - use 'animated' for solid lines with animation
+      const edgeType = (formData.animated && lineStyle === 'solid') ? 'animated' : formData.type;
+
       onUpdateEdge(edge.id, {
         stroke: formData.stroke,
         strokeWidth: formData.strokeWidth,
-        animated: formData.animated && lineStyle === 'solid',
-        type: formData.type,
+        animated: false, // We handle animation via custom edge type
+        type: edgeType,
         style: {
           strokeDasharray,
           animation,
         },
         animationDirection: formData.animationDirection,
         animationSpeed: formData.animationSpeed,
+        edgeType: formData.type, // Store the original edge type for path calculation
       });
     }
     onClose();
@@ -226,43 +246,39 @@ export function EdgeEditDialog({
 
               {formData.animated && (
                 <>
-                  {lineStyle !== 'solid' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="animationDirection">Animation Direction</Label>
-                        <Select
-                          value={formData.animationDirection}
-                          onValueChange={(value) => setFormData({ ...formData, animationDirection: value as 'forward' | 'backward' })}
-                        >
-                          <SelectTrigger id="animationDirection">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="forward">Forward</SelectItem>
-                            <SelectItem value="backward">Backward</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="animationDirection">Animation Direction</Label>
+                    <Select
+                      value={formData.animationDirection}
+                      onValueChange={(value) => setFormData({ ...formData, animationDirection: value as 'forward' | 'backward' })}
+                    >
+                      <SelectTrigger id="animationDirection">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="forward">Forward</SelectItem>
+                        <SelectItem value="backward">Backward</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="animationSpeed">
-                          Animation Speed: {formData.animationSpeed}x
-                        </Label>
-                        <Slider
-                          id="animationSpeed"
-                          min={0.5}
-                          max={3}
-                          step={0.5}
-                          value={[formData.animationSpeed ?? 1]}
-                          onValueChange={(value) => setFormData({ ...formData, animationSpeed: value[0] })}
-                        />
-                      </div>
-                    </>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="animationSpeed">
+                      Animation Speed: {formData.animationSpeed}x
+                    </Label>
+                    <Slider
+                      id="animationSpeed"
+                      min={0.5}
+                      max={3}
+                      step={0.5}
+                      value={[formData.animationSpeed ?? 1]}
+                      onValueChange={(value) => setFormData({ ...formData, animationSpeed: value[0] })}
+                    />
+                  </div>
 
                   {lineStyle === 'solid' && (
                     <div className="text-sm text-muted-foreground p-4 bg-muted rounded-md">
-                      Solid lines use React Flow's built-in animation (moving dots). For dashed/dotted lines, you can control animation direction and speed.
+                      Solid lines show animated circles moving along the path. Dashed/dotted lines animate the dash pattern itself.
                     </div>
                   )}
                 </>

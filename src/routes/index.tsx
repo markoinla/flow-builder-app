@@ -67,10 +67,16 @@ function App() {
             A powerful diagram builder powered by React Flow and TanStack Start.
             Create flows with an intuitive drag-and-drop interface.
           </p>
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <Link
+              to="/flows"
+              className="px-8 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-cyan-500/50"
+            >
+              My Workflows
+            </Link>
             <Link
               to="/builder"
-              className="px-8 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-cyan-500/50"
+              className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors"
             >
               Open Builder
             </Link>
