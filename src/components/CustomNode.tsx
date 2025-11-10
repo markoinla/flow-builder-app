@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { Handle, Position, NodeProps, NodeResizer } from '@xyflow/react';
 import type { NodeStyle, HandleConfig, HandleType } from '../types/node-types';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -43,6 +43,8 @@ const renderHandle = (position: Position, handleType?: HandleType) => {
 
 export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isPopoverHovered, setIsPopoverHovered] = useState(false);
+  const [shouldShowPopover, setShouldShowPopover] = useState(false);
 
   const style = data.style || {
     backgroundColor: '#ffffff',
@@ -60,6 +62,16 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
   const backgroundColor = style.backgroundOpacity !== undefined
     ? hexToRgba(style.backgroundColor, style.backgroundOpacity)
     : style.backgroundColor;
+
+  // Update popover visibility with a small delay to prevent animation flicker
+  useEffect(() => {
+    if (isHovered || isPopoverHovered) {
+      setShouldShowPopover(true);
+    } else {
+      const timer = setTimeout(() => setShouldShowPopover(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isHovered, isPopoverHovered]);
 
   const nodeContent = (
     <div
@@ -94,7 +106,7 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
     <>
       <NodeResizer isVisible={selected} minWidth={100} minHeight={40} />
       {hasContent ? (
-        <Popover open={isHovered}>
+        <Popover open={shouldShowPopover}>
           <PopoverTrigger asChild>
             {nodeContent}
           </PopoverTrigger>
@@ -103,6 +115,8 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
             side="top"
             align="center"
             onOpenAutoFocus={(e) => e.preventDefault()}
+            onMouseEnter={() => setIsPopoverHovered(true)}
+            onMouseLeave={() => setIsPopoverHovered(false)}
           >
             <div dangerouslySetInnerHTML={{ __html: data.content }} />
           </PopoverContent>

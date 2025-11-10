@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { Handle, Position, type NodeProps, NodeResizer } from '@xyflow/react';
 import * as LucideIcons from 'lucide-react';
 import type { HandleConfig, HandleType } from '../types/node-types';
@@ -82,6 +82,8 @@ const hexToRgba = (hex: string, opacity: number): string => {
 
 export const IconNode = memo(({ data, selected }: NodeProps<IconNodeData>) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isPopoverHovered, setIsPopoverHovered] = useState(false);
+  const [shouldShowPopover, setShouldShowPopover] = useState(false);
 
   // Dynamically get the icon component from Lucide
   // Convert kebab-case icon names (e.g., 'database', 'alert-circle') to PascalCase (e.g., 'Database', 'AlertCircle')
@@ -105,6 +107,16 @@ export const IconNode = memo(({ data, selected }: NodeProps<IconNodeData>) => {
       ? hexToRgba(data.backgroundColor, data.backgroundOpacity)
       : data.backgroundColor
     : 'transparent';
+
+  // Update popover visibility with a small delay to prevent animation flicker
+  useEffect(() => {
+    if (isHovered || isPopoverHovered) {
+      setShouldShowPopover(true);
+    } else {
+      const timer = setTimeout(() => setShouldShowPopover(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isHovered, isPopoverHovered]);
 
   const nodeContent = (
     <div
@@ -166,7 +178,7 @@ export const IconNode = memo(({ data, selected }: NodeProps<IconNodeData>) => {
     <>
       <NodeResizer isVisible={selected} minWidth={50} minHeight={50} />
       {hasContent ? (
-        <Popover open={isHovered}>
+        <Popover open={shouldShowPopover}>
           <PopoverTrigger asChild>
             {nodeContent}
           </PopoverTrigger>
@@ -175,6 +187,8 @@ export const IconNode = memo(({ data, selected }: NodeProps<IconNodeData>) => {
             side="top"
             align="center"
             onOpenAutoFocus={(e) => e.preventDefault()}
+            onMouseEnter={() => setIsPopoverHovered(true)}
+            onMouseLeave={() => setIsPopoverHovered(false)}
           >
             <div dangerouslySetInnerHTML={{ __html: data.content }} />
           </PopoverContent>
