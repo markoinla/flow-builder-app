@@ -1,0 +1,1 @@
+ALTER TABLE `node_types` ADD `image_style` text;

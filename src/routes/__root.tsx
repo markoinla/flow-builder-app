@@ -1,4 +1,4 @@
-import { HeadContent, Scripts, createRootRoute, Outlet } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
@@ -34,9 +34,12 @@ export const Route = createRootRoute({
 })
 
 function RootComponent() {
+  const routerState = useRouterState();
+  const isEmbedRoute = routerState.location.pathname.startsWith('/embed');
+
   return (
     <>
-      <Header />
+      {!isEmbedRoute && <Header />}
       <Outlet />
     </>
   )

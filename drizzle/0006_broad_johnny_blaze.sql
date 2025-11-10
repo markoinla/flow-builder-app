@@ -1,0 +1,1 @@
+ALTER TABLE `flow_data` ADD `canvas_settings` text DEFAULT '{"showDots":true,"backgroundColor":"#ffffff","dotColor":"#cccccc"}';

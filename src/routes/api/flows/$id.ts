@@ -80,6 +80,7 @@ export const Route = createFileRoute('/api/flows/$id')({
             nodes?: any[];
             edges?: any[];
             viewport?: { x: number; y: number; zoom: number };
+            canvasSettings?: { showDots: boolean; backgroundColor: string; dotColor: string };
           };
 
           // Update flow metadata
@@ -94,8 +95,8 @@ export const Route = createFileRoute('/api/flows/$id')({
               .where(and(eq(flows.id, id), eq(flows.userId, session.user.id)));
           }
 
-          // Update flow data (nodes, edges, viewport)
-          if (body.nodes !== undefined || body.edges !== undefined || body.viewport !== undefined) {
+          // Update flow data (nodes, edges, viewport, canvasSettings)
+          if (body.nodes !== undefined || body.edges !== undefined || body.viewport !== undefined || body.canvasSettings !== undefined) {
             const updateData: any = {
               updatedAt: new Date(),
             };
@@ -108,6 +109,9 @@ export const Route = createFileRoute('/api/flows/$id')({
             }
             if (body.viewport !== undefined) {
               updateData.viewport = body.viewport;
+            }
+            if (body.canvasSettings !== undefined) {
+              updateData.canvasSettings = body.canvasSettings;
             }
 
             await db

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FlowsIndexRouteImport } from './routes/flows/index'
 import { Route as BuilderIndexRouteImport } from './routes/builder/index'
+import { Route as EmbedFlowIdRouteImport } from './routes/embed/$flowId'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as ApiNodeTypesIndexRouteImport } from './routes/api/node-types/index'
@@ -21,11 +22,14 @@ import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as ApiNodeTypesIdRouteImport } from './routes/api/node-types/$id'
 import { Route as ApiFlowsIdRouteImport } from './routes/api/flows/$id'
+import { Route as ApiEmbedIdRouteImport } from './routes/api/embed/$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
+import { Route as ApiUploadImageIndexRouteImport } from './routes/api/upload/image/index'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
+import { Route as ApiUploadImageSplatRouteImport } from './routes/api/upload/image/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +44,11 @@ const FlowsIndexRoute = FlowsIndexRouteImport.update({
 const BuilderIndexRoute = BuilderIndexRouteImport.update({
   id: '/builder/',
   path: '/builder/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbedFlowIdRoute = EmbedFlowIdRouteImport.update({
+  id: '/embed/$flowId',
+  path: '/embed/$flowId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -87,6 +96,11 @@ const ApiFlowsIdRoute = ApiFlowsIdRouteImport.update({
   path: '/api/flows/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEmbedIdRoute = ApiEmbedIdRouteImport.update({
+  id: '/api/embed/$id',
+  path: '/api/embed/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -95,6 +109,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   id: '/demo/start/ssr/',
   path: '/demo/start/ssr/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadImageIndexRoute = ApiUploadImageIndexRouteImport.update({
+  id: '/api/upload/image/',
+  path: '/api/upload/image/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoStartSsrSpaModeRoute = DemoStartSsrSpaModeRouteImport.update({
@@ -112,14 +131,21 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
   path: '/demo/start/ssr/data-only',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiUploadImageSplatRoute = ApiUploadImageSplatRouteImport.update({
+  id: '/api/upload/image/$',
+  path: '/api/upload/image/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/embed/$flowId': typeof EmbedFlowIdRoute
   '/builder': typeof BuilderIndexRoute
   '/flows': typeof FlowsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/embed/$id': typeof ApiEmbedIdRoute
   '/api/flows/$id': typeof ApiFlowsIdRoute
   '/api/node-types/$id': typeof ApiNodeTypesIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -127,18 +153,22 @@ export interface FileRoutesByFullPath {
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
   '/api/flows': typeof ApiFlowsIndexRoute
   '/api/node-types': typeof ApiNodeTypesIndexRoute
+  '/api/upload/image/$': typeof ApiUploadImageSplatRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
+  '/api/upload/image': typeof ApiUploadImageIndexRoute
   '/demo/start/ssr': typeof DemoStartSsrIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/embed/$flowId': typeof EmbedFlowIdRoute
   '/builder': typeof BuilderIndexRoute
   '/flows': typeof FlowsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/embed/$id': typeof ApiEmbedIdRoute
   '/api/flows/$id': typeof ApiFlowsIdRoute
   '/api/node-types/$id': typeof ApiNodeTypesIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -146,9 +176,11 @@ export interface FileRoutesByTo {
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
   '/api/flows': typeof ApiFlowsIndexRoute
   '/api/node-types': typeof ApiNodeTypesIndexRoute
+  '/api/upload/image/$': typeof ApiUploadImageSplatRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
+  '/api/upload/image': typeof ApiUploadImageIndexRoute
   '/demo/start/ssr': typeof DemoStartSsrIndexRoute
 }
 export interface FileRoutesById {
@@ -156,9 +188,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/embed/$flowId': typeof EmbedFlowIdRoute
   '/builder/': typeof BuilderIndexRoute
   '/flows/': typeof FlowsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/embed/$id': typeof ApiEmbedIdRoute
   '/api/flows/$id': typeof ApiFlowsIdRoute
   '/api/node-types/$id': typeof ApiNodeTypesIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -166,9 +200,11 @@ export interface FileRoutesById {
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
   '/api/flows/': typeof ApiFlowsIndexRoute
   '/api/node-types/': typeof ApiNodeTypesIndexRoute
+  '/api/upload/image/$': typeof ApiUploadImageSplatRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
+  '/api/upload/image/': typeof ApiUploadImageIndexRoute
   '/demo/start/ssr/': typeof DemoStartSsrIndexRoute
 }
 export interface FileRouteTypes {
@@ -177,9 +213,11 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/embed/$flowId'
     | '/builder'
     | '/flows'
     | '/api/auth/$'
+    | '/api/embed/$id'
     | '/api/flows/$id'
     | '/api/node-types/$id'
     | '/demo/api/names'
@@ -187,18 +225,22 @@ export interface FileRouteTypes {
     | '/demo/start/server-funcs'
     | '/api/flows'
     | '/api/node-types'
+    | '/api/upload/image/$'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
+    | '/api/upload/image'
     | '/demo/start/ssr'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/embed/$flowId'
     | '/builder'
     | '/flows'
     | '/api/auth/$'
+    | '/api/embed/$id'
     | '/api/flows/$id'
     | '/api/node-types/$id'
     | '/demo/api/names'
@@ -206,18 +248,22 @@ export interface FileRouteTypes {
     | '/demo/start/server-funcs'
     | '/api/flows'
     | '/api/node-types'
+    | '/api/upload/image/$'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
+    | '/api/upload/image'
     | '/demo/start/ssr'
   id:
     | '__root__'
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/embed/$flowId'
     | '/builder/'
     | '/flows/'
     | '/api/auth/$'
+    | '/api/embed/$id'
     | '/api/flows/$id'
     | '/api/node-types/$id'
     | '/demo/api/names'
@@ -225,9 +271,11 @@ export interface FileRouteTypes {
     | '/demo/start/server-funcs'
     | '/api/flows/'
     | '/api/node-types/'
+    | '/api/upload/image/$'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
+    | '/api/upload/image/'
     | '/demo/start/ssr/'
   fileRoutesById: FileRoutesById
 }
@@ -235,9 +283,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
+  EmbedFlowIdRoute: typeof EmbedFlowIdRoute
   BuilderIndexRoute: typeof BuilderIndexRoute
   FlowsIndexRoute: typeof FlowsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiEmbedIdRoute: typeof ApiEmbedIdRoute
   ApiFlowsIdRoute: typeof ApiFlowsIdRoute
   ApiNodeTypesIdRoute: typeof ApiNodeTypesIdRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
@@ -245,9 +295,11 @@ export interface RootRouteChildren {
   DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
   ApiFlowsIndexRoute: typeof ApiFlowsIndexRoute
   ApiNodeTypesIndexRoute: typeof ApiNodeTypesIndexRoute
+  ApiUploadImageSplatRoute: typeof ApiUploadImageSplatRoute
   DemoStartSsrDataOnlyRoute: typeof DemoStartSsrDataOnlyRoute
   DemoStartSsrFullSsrRoute: typeof DemoStartSsrFullSsrRoute
   DemoStartSsrSpaModeRoute: typeof DemoStartSsrSpaModeRoute
+  ApiUploadImageIndexRoute: typeof ApiUploadImageIndexRoute
   DemoStartSsrIndexRoute: typeof DemoStartSsrIndexRoute
 }
 
@@ -272,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/builder'
       fullPath: '/builder'
       preLoaderRoute: typeof BuilderIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embed/$flowId': {
+      id: '/embed/$flowId'
+      path: '/embed/$flowId'
+      fullPath: '/embed/$flowId'
+      preLoaderRoute: typeof EmbedFlowIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/signup': {
@@ -337,6 +396,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFlowsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/embed/$id': {
+      id: '/api/embed/$id'
+      path: '/api/embed/$id'
+      fullPath: '/api/embed/$id'
+      preLoaderRoute: typeof ApiEmbedIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -349,6 +415,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/start/ssr'
       fullPath: '/demo/start/ssr'
       preLoaderRoute: typeof DemoStartSsrIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload/image/': {
+      id: '/api/upload/image/'
+      path: '/api/upload/image'
+      fullPath: '/api/upload/image'
+      preLoaderRoute: typeof ApiUploadImageIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/start/ssr/spa-mode': {
@@ -372,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/upload/image/$': {
+      id: '/api/upload/image/$'
+      path: '/api/upload/image/$'
+      fullPath: '/api/upload/image/$'
+      preLoaderRoute: typeof ApiUploadImageSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -379,9 +459,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
+  EmbedFlowIdRoute: EmbedFlowIdRoute,
   BuilderIndexRoute: BuilderIndexRoute,
   FlowsIndexRoute: FlowsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiEmbedIdRoute: ApiEmbedIdRoute,
   ApiFlowsIdRoute: ApiFlowsIdRoute,
   ApiNodeTypesIdRoute: ApiNodeTypesIdRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,
@@ -389,9 +471,11 @@ const rootRouteChildren: RootRouteChildren = {
   DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
   ApiFlowsIndexRoute: ApiFlowsIndexRoute,
   ApiNodeTypesIndexRoute: ApiNodeTypesIndexRoute,
+  ApiUploadImageSplatRoute: ApiUploadImageSplatRoute,
   DemoStartSsrDataOnlyRoute: DemoStartSsrDataOnlyRoute,
   DemoStartSsrFullSsrRoute: DemoStartSsrFullSsrRoute,
   DemoStartSsrSpaModeRoute: DemoStartSsrSpaModeRoute,
+  ApiUploadImageIndexRoute: ApiUploadImageIndexRoute,
   DemoStartSsrIndexRoute: DemoStartSsrIndexRoute,
 }
 export const routeTree = rootRouteImport

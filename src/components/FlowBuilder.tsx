@@ -13,12 +13,15 @@ import {
   Panel,
   type NodeTypes,
   type EdgeTypes,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { toast } from 'sonner';
 import { CustomNode } from './CustomNode';
 import { IconNode } from './IconNode';
 import { RectangleNode } from './RectangleNode';
+import { ContentNode } from './ContentNode';
+import { ImageNode } from './ImageNode';
 import { RectangleTool } from './RectangleTool';
 import { AnimatedEdge } from './AnimatedEdge';
 import { NodePalette } from './NodePalette';
@@ -26,11 +29,17 @@ import { DrawingToolbar } from './DrawingToolbar';
 import { RectangleEditDialog } from './NodeContextMenu';
 import { EdgeEditDialog, type EdgeStyleData } from './EdgeEditDialog';
 import { NodeContextMenu as NodeRightClickMenu } from './NodeContextMenu2';
+import { RectangleContextMenu } from './RectangleContextMenu';
 import { NodeContentDialog } from './NodeContentDialog';
+import { ContentEditDialog } from './ContentEditDialog';
+import { ImageEditDialog } from './ImageEditDialog';
 import { NodeTypeEditor, type NodeTypeFormData } from './NodeTypeEditor';
+import { CanvasSettings } from './CanvasSettings';
+import { FlowEmbedGenerator } from './FlowEmbedGenerator';
 import { type IconName } from './ui/icon-picker';
 import { DEFAULT_NODE_TYPES, type CustomNodeType, type HandleConfig } from '../types/node-types';
 import { nodeTypesApi, flowsApi } from '../lib/api';
+import { loadEdgeSettings } from '../lib/edgeSettingsStorage';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -52,13 +61,17 @@ import {
   Trash2,
   MousePointerClick,
   Save,
-  Eraser
+  Eraser,
+  Settings,
+  Share2
 } from 'lucide-react';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
   icon: IconNode,
   rectangle: RectangleNode,
+  content: ContentNode,
+  image: ImageNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -106,9 +119,35 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
     left: number;
   } | null>(null);
 
-  // Node content dialog state
+  // Rectangle context menu state
+  const [rectangleContextMenu, setRectangleContextMenu] = useState<{
+    id: string;
+    top: number;
+    left: number;
+  } | null>(null);
+
+  // Node content dialog state (for hover content)
   const [showNodeContentDialog, setShowNodeContentDialog] = useState(false);
   const [selectedContentNode, setSelectedContentNode] = useState<Node | null>(null);
+
+  // Content node edit dialog state (for content nodes)
+  const [showContentEditDialog, setShowContentEditDialog] = useState(false);
+  const [selectedContentEditNode, setSelectedContentEditNode] = useState<Node | null>(null);
+
+  // Image node edit dialog state (for image nodes)
+  const [showImageEditDialog, setShowImageEditDialog] = useState(false);
+  const [selectedImageEditNode, setSelectedImageEditNode] = useState<Node | null>(null);
+
+  // Canvas settings state
+  const [showCanvasSettings, setShowCanvasSettings] = useState(false);
+  const [canvasSettings, setCanvasSettings] = useState({
+    showDots: true,
+    backgroundColor: '#ffffff',
+    dotColor: '#cccccc',
+  });
+
+  // Embed dialog state
+  const [showEmbedDialog, setShowEmbedDialog] = useState(false);
 
   // Node type editor state (for editing node properties)
   const [showNodeTypeEditor, setShowNodeTypeEditor] = useState(false);
@@ -123,6 +162,8 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
     borderWidth: 1,
     textColor: '#000000',
     borderRadius: 3,
+    fontFamily: 'Inter',
+    fontSize: 14,
     iconName: 'box' as IconName,
     iconSize: 32,
     iconColor: '#3b82f6',
@@ -211,6 +252,10 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
             setFlowName(flow.name);
             setFlowDescription(flow.description || '');
             setFlowId(flow.id);
+            // Load canvas settings if they exist
+            if (flowData.canvasSettings) {
+              setCanvasSettings(flowData.canvasSettings);
+            }
           }
         } catch (error) {
           console.error('Failed to load flow from API:', error);
@@ -224,12 +269,16 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
         const savedFlow = localStorage.getItem('currentFlow');
         if (savedFlow) {
           try {
-            const { nodes: savedNodes, edges: savedEdges, flowId: savedFlowId } = JSON.parse(savedFlow);
+            const { nodes: savedNodes, edges: savedEdges, flowId: savedFlowId, canvasSettings: savedCanvasSettings } = JSON.parse(savedFlow);
             if (savedNodes && savedEdges) {
               setNodes(savedNodes);
               // Migrate old animation directions
               setEdges(migrateEdgeAnimations(savedEdges));
               setFlowId(savedFlowId || null);
+              // Load canvas settings if they exist
+              if (savedCanvasSettings) {
+                setCanvasSettings(savedCanvasSettings);
+              }
             }
           } catch (error) {
             console.error('Failed to load saved flow from localStorage:', error);
@@ -242,7 +291,52 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
   }, [initialFlowId, setNodes, setEdges, migrateEdgeAnimations]);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) => {
+      // Load saved edge settings
+      const savedSettings = loadEdgeSettings();
+
+      // Build strokeDasharray based on line style
+      let strokeDasharray: string | undefined = undefined;
+      if (savedSettings.lineStyle === 'dashed') {
+        strokeDasharray = '5 5';
+      } else if (savedSettings.lineStyle === 'dotted') {
+        strokeDasharray = '1 5';
+      }
+
+      // Build animation if animated (only for dashed/dotted)
+      let animation: string | undefined = undefined;
+      if (savedSettings.animated && (savedSettings.lineStyle === 'dashed' || savedSettings.lineStyle === 'dotted')) {
+        const duration = 1 / savedSettings.animationSpeed;
+        if (savedSettings.animationDirection === 'forward') {
+          animation = `dashdraw ${duration}s linear infinite`;
+        } else {
+          animation = `dashdraw-reverse ${duration}s linear infinite`;
+        }
+      }
+
+      // Determine edge type - use 'animated' for solid lines with animation
+      const edgeType = (savedSettings.animated && savedSettings.lineStyle === 'solid') ? 'animated' : savedSettings.type;
+
+      // Create edge with saved settings
+      const newEdge = {
+        ...params,
+        type: edgeType,
+        animated: false, // We handle animation via custom edge type
+        style: {
+          stroke: savedSettings.stroke,
+          strokeWidth: savedSettings.strokeWidth,
+          strokeDasharray,
+          animation,
+        },
+        data: {
+          animationDirection: savedSettings.animationDirection,
+          animationSpeed: savedSettings.animationSpeed,
+          edgeType: savedSettings.type, // Store the original edge type for path calculation
+        },
+      };
+
+      setEdges((eds) => addEdge(newEdge, eds));
+    },
     [setEdges]
   );
 
@@ -251,15 +345,18 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
       // Prevent default context menu
       event.preventDefault();
 
-      // Handle rectangle nodes with dialog
+      // Handle rectangle nodes with context menu
       if (node.type === 'rectangle') {
-        setSelectedRectangle(node);
-        setShowRectangleDialog(true);
+        setRectangleContextMenu({
+          id: node.id,
+          top: event.clientY,
+          left: event.clientX,
+        });
         return;
       }
 
-      // Handle custom and icon nodes with context menu
-      if (node.type === 'custom' || node.type === 'icon') {
+      // Handle custom, icon, content, and image nodes with context menu
+      if (node.type === 'custom' || node.type === 'icon' || node.type === 'content' || node.type === 'image') {
         // Use viewport coordinates for fixed positioning
         setNodeContextMenu({
           id: node.id,
@@ -285,6 +382,31 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
   }, [setNodes, setEdges]);
+
+  const handleDuplicateRectangle = useCallback((nodeId: string) => {
+    const rectangleToDuplicate = nodes.find(n => n.id === nodeId);
+    if (!rectangleToDuplicate || rectangleToDuplicate.type !== 'rectangle') return;
+
+    const newRectangle: Node = {
+      ...rectangleToDuplicate,
+      id: `rectangle_${Date.now()}`,
+      position: {
+        x: rectangleToDuplicate.position.x + 20,
+        y: rectangleToDuplicate.position.y + 20,
+      },
+      selected: false,
+    };
+
+    setNodes((nds) => [...nds, newRectangle]);
+  }, [nodes, setNodes]);
+
+  const handleEditRectangle = useCallback((nodeId: string) => {
+    const rectangle = nodes.find(n => n.id === nodeId);
+    if (rectangle && rectangle.type === 'rectangle') {
+      setSelectedRectangle(rectangle);
+      setShowRectangleDialog(true);
+    }
+  }, [nodes]);
 
   const onEdgeContextMenu = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
@@ -380,6 +502,71 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
         handles: nodeType.handles || { top: 'both', bottom: 'both' },
       });
       setShowNodeTypeEditor(true);
+    } else if (nodeType.type === 'content' && nodeType.style) {
+      setNodeTypeFormData({
+        name: nodeType.name,
+        nodeTypeCategory: 'content',
+        backgroundColor: nodeType.style.backgroundColor,
+        backgroundOpacity: nodeType.style.backgroundOpacity ?? 100,
+        borderColor: nodeType.style.borderColor,
+        borderStyle: nodeType.style.borderStyle,
+        borderWidth: nodeType.style.borderWidth,
+        textColor: nodeType.style.textColor || '#000000',
+        borderRadius: nodeType.style.borderRadius ?? 3,
+        fontFamily: nodeType.style.fontFamily || 'Inter',
+        fontSize: nodeType.style.fontSize || 14,
+        iconName: 'box' as IconName,
+        iconSize: 32,
+        iconColor: '#3b82f6',
+        iconBackgroundColor: '',
+        iconBackgroundOpacity: 100,
+        showLabel: true,
+        labelPosition: 'bottom',
+        labelColor: '#000000',
+        iconBorderColor: '#1a192b',
+        iconBorderStyle: 'solid',
+        iconBorderWidth: 0,
+        iconBorderRadius: 8,
+        handles: nodeType.handles || { top: 'both', bottom: 'both' },
+      });
+      setShowNodeTypeEditor(true);
+    } else if (nodeType.type === 'image' && nodeType.imageStyle) {
+      setNodeTypeFormData({
+        name: nodeType.name,
+        nodeTypeCategory: 'image',
+        backgroundColor: '',
+        backgroundOpacity: 100,
+        borderColor: '#1a192b',
+        borderStyle: 'solid',
+        borderWidth: 1,
+        textColor: '#000000',
+        borderRadius: 3,
+        fontFamily: 'Inter',
+        fontSize: 14,
+        iconName: 'box' as IconName,
+        iconSize: 32,
+        iconColor: '#3b82f6',
+        iconBackgroundColor: '',
+        iconBackgroundOpacity: 100,
+        showLabel: true,
+        labelPosition: 'bottom',
+        labelColor: '#000000',
+        iconBorderColor: '#1a192b',
+        iconBorderStyle: 'solid',
+        iconBorderWidth: 0,
+        iconBorderRadius: 8,
+        imageUrl: '',
+        imageSize: nodeType.imageStyle.imageSize || 100,
+        imageOpacity: nodeType.imageStyle.opacity || 100,
+        imageBackgroundColor: nodeType.imageStyle.backgroundColor || '#ffffff',
+        imageBackgroundOpacity: nodeType.imageStyle.backgroundOpacity || 100,
+        imageBorderColor: nodeType.imageStyle.borderColor || '#e5e5e5',
+        imageBorderStyle: nodeType.imageStyle.borderStyle || 'solid',
+        imageBorderWidth: nodeType.imageStyle.borderWidth ?? 1,
+        imageBorderRadius: nodeType.imageStyle.borderRadius ?? 4,
+        handles: nodeType.handles || { top: 'both', bottom: 'both' },
+      });
+      setShowNodeTypeEditor(true);
     } else if (nodeType.style) {
       setNodeTypeFormData({
         name: nodeType.name,
@@ -391,6 +578,8 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
         borderWidth: nodeType.style.borderWidth,
         textColor: nodeType.style.textColor || '#000000',
         borderRadius: nodeType.style.borderRadius ?? 3,
+        fontFamily: nodeType.style.fontFamily || 'Inter',
+        fontSize: nodeType.style.fontSize || 14,
         iconName: 'box' as IconName,
         iconSize: 32,
         iconColor: '#3b82f6',
@@ -415,8 +604,15 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
   const handleEditNodeContent = useCallback((nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (node) {
-      setSelectedContentNode(node);
-      setShowNodeContentDialog(true);
+      // Content nodes use the content edit dialog
+      if (node.type === 'content') {
+        setSelectedContentEditNode(node);
+        setShowContentEditDialog(true);
+      } else {
+        // Other nodes use the hover content dialog
+        setSelectedContentNode(node);
+        setShowNodeContentDialog(true);
+      }
     }
   }, [nodes]);
 
@@ -437,7 +633,7 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
     setNodes((nds) => [...nds, newNode]);
   }, [nodes, setNodes]);
 
-  const handleUpdateNode = useCallback((nodeId: string, updates: { label?: string; content?: string }) => {
+  const handleUpdateNode = useCallback((nodeId: string, updates: { label?: string; content?: string; textSize?: string; style?: any }) => {
     setNodes((nds) =>
       nds.map((node) =>
         node.id === nodeId
@@ -447,6 +643,24 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
     );
   }, [setNodes]);
 
+  const handleUpdateImageNode = useCallback((nodeId: string, updates: { imageUrl?: string; imageSize?: number; opacity?: number }) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...updates } }
+          : node
+      )
+    );
+  }, [setNodes]);
+
+  const handleOpenImageEdit = useCallback((nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (node && node.type === 'image') {
+      setSelectedImageEditNode(node);
+      setShowImageEditDialog(true);
+    }
+  }, [nodes]);
+
   const handleDeleteNode = useCallback((nodeId: string) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
@@ -454,7 +668,7 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
 
   const handleSave = useCallback(async () => {
     try {
-      const savedFlowId = await flowsApi.save(flowId, flowName, flowDescription, nodes, edges);
+      const savedFlowId = await flowsApi.save(flowId, flowName, flowDescription, nodes, edges, canvasSettings);
       setFlowId(savedFlowId);
 
       // Also save to localStorage as backup
@@ -462,6 +676,7 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
         nodes,
         edges,
         flowId: savedFlowId,
+        canvasSettings,
       }));
 
       toast.success('Workflow saved to database successfully!');
@@ -474,7 +689,7 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
       setError('Failed to save flow');
       toast.error('Failed to save workflow');
     }
-  }, [flowId, flowName, flowDescription, nodes, edges, onSave]);
+  }, [flowId, flowName, flowDescription, nodes, edges, canvasSettings, onSave]);
 
   const handleClear = useCallback(() => {
     setShowClearDialog(true);
@@ -547,6 +762,51 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
           },
           zIndex: 10, // Icon nodes appear above rectangles
         };
+      } else if (nodeType.type === 'content') {
+        // Content node
+        newNode = {
+          id: `${nodeType.id}_${Date.now()}`,
+          type: 'content',
+          position,
+          data: {
+            sourceNodeTypeId: nodeType.id, // Track which node type created this node
+            label: nodeType.name,
+            content: '', // Start with empty content
+            textSize: 'medium', // Default text size
+            style: nodeType.style,
+            handles: nodeType.handles || { top: 'both', bottom: 'both' },
+          },
+          measured: {
+            width: 200,
+            height: 150,
+          },
+          zIndex: 0, // Content nodes at default layer
+        };
+      } else if (nodeType.type === 'image' && nodeType.imageStyle) {
+        // Image node - imageUrl, imageSize, opacity are per-instance, not from node type
+        newNode = {
+          id: `${nodeType.id}_${Date.now()}`,
+          type: 'image',
+          position,
+          data: {
+            sourceNodeTypeId: nodeType.id, // Track which node type created this node
+            imageUrl: '', // Per-instance property - starts empty
+            imageSize: 100, // Default size
+            opacity: 100, // Default opacity
+            backgroundColor: nodeType.imageStyle.backgroundColor,
+            backgroundOpacity: nodeType.imageStyle.backgroundOpacity,
+            borderColor: nodeType.imageStyle.borderColor,
+            borderStyle: nodeType.imageStyle.borderStyle,
+            borderWidth: nodeType.imageStyle.borderWidth,
+            borderRadius: nodeType.imageStyle.borderRadius,
+            handles: nodeType.handles || { top: 'both', bottom: 'both' },
+          },
+          measured: {
+            width: 200,
+            height: 200,
+          },
+          zIndex: 10, // Image nodes appear above rectangles
+        };
       } else {
         // Standard/custom node (backward compatible)
         newNode = {
@@ -599,7 +859,7 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
             return node;
           }
 
-          // Update based on node type (icon or standard)
+          // Update based on node type (icon, image, or standard)
           if (nodeType.type === 'icon' && nodeType.iconStyle) {
             return {
               ...node,
@@ -618,6 +878,22 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
                 borderStyle: nodeType.iconStyle.borderStyle,
                 borderWidth: nodeType.iconStyle.borderWidth,
                 borderRadius: nodeType.iconStyle.borderRadius,
+                handles: nodeType.handles || { top: 'both', bottom: 'both' },
+              },
+            };
+          } else if (nodeType.type === 'image' && nodeType.imageStyle) {
+            // Image node - preserve per-instance imageUrl, imageSize, and opacity
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                // Don't overwrite per-instance image properties
+                backgroundColor: nodeType.imageStyle.backgroundColor,
+                backgroundOpacity: nodeType.imageStyle.backgroundOpacity,
+                borderColor: nodeType.imageStyle.borderColor,
+                borderStyle: nodeType.imageStyle.borderStyle,
+                borderWidth: nodeType.imageStyle.borderWidth,
+                borderRadius: nodeType.imageStyle.borderRadius,
                 handles: nodeType.handles || { top: 'both', bottom: 'both' },
               },
             };
@@ -669,6 +945,13 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
       setEditingNodeTypeId(null);
     }
   }, [editingNodeTypeId, handleEditNodeType]);
+
+  const handleDuplicateNodeTypeFromEditor = useCallback(async (nodeType: CustomNodeType) => {
+    // Always add as a new node type when duplicating
+    await handleAddNodeType(nodeType);
+    setShowNodeTypeEditor(false);
+    setEditingNodeTypeId(null);
+  }, [handleAddNodeType]);
 
   if (isLoading) {
     return (
@@ -732,6 +1015,13 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
                 onToggle={setIsRectangleActive}
               />
               <Button
+                onClick={() => setShowCanvasSettings(true)}
+                variant="outline"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Canvas Settings
+              </Button>
+              <Button
                 onClick={handleClear}
                 variant="outline"
               >
@@ -747,6 +1037,12 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
                 <Save className="h-4 w-4 mr-2" />
                 Save Flow
               </Button>
+              {flowId && (
+                <Button onClick={() => setShowEmbedDialog(true)} variant="outline">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share/Embed
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -769,7 +1065,20 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
             fitView
             attributionPosition="bottom-left"
           >
-            <Background />
+            {canvasSettings.showDots ? (
+              <Background
+                variant={BackgroundVariant.Dots}
+                color={canvasSettings.dotColor}
+                style={{ backgroundColor: canvasSettings.backgroundColor }}
+              />
+            ) : (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: canvasSettings.backgroundColor,
+                zIndex: 0
+              }} />
+            )}
             <Controls />
             <MiniMap />
 
@@ -848,6 +1157,7 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
         onClose={() => setShowRectangleDialog(false)}
         onUpdateNode={handleUpdateRectangle}
         onDeleteNode={handleDeleteRectangle}
+        onDuplicateNode={handleDuplicateRectangle}
       />
 
       {/* Edge Edit Dialog */}
@@ -860,16 +1170,37 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
       />
 
       {/* Node Context Menu */}
-      {nodeContextMenu && (
-        <NodeRightClickMenu
-          id={nodeContextMenu.id}
-          top={nodeContextMenu.top}
-          left={nodeContextMenu.left}
-          onEdit={handleEditNode}
-          onEditContent={handleEditNodeContent}
-          onDuplicate={handleDuplicateNode}
-          onDelete={handleDeleteNode}
-          onClose={() => setNodeContextMenu(null)}
+      {nodeContextMenu && (() => {
+        const node = nodes.find(n => n.id === nodeContextMenu.id);
+        const isContentNode = node?.type === 'content';
+        const isImageNode = node?.type === 'image';
+        const isIconNode = node?.type === 'icon';
+
+        return (
+          <NodeRightClickMenu
+            id={nodeContextMenu.id}
+            top={nodeContextMenu.top}
+            left={nodeContextMenu.left}
+            onEdit={handleEditNode}
+            onEditContent={isContentNode || isIconNode ? handleEditNodeContent : undefined}
+            onEditImage={isImageNode ? handleOpenImageEdit : undefined}
+            onDuplicate={handleDuplicateNode}
+            onDelete={handleDeleteNode}
+            onClose={() => setNodeContextMenu(null)}
+          />
+        );
+      })()}
+
+      {/* Rectangle Context Menu */}
+      {rectangleContextMenu && (
+        <RectangleContextMenu
+          id={rectangleContextMenu.id}
+          top={rectangleContextMenu.top}
+          left={rectangleContextMenu.left}
+          onEdit={handleEditRectangle}
+          onDuplicate={handleDuplicateRectangle}
+          onDelete={handleDeleteRectangle}
+          onClose={() => setRectangleContextMenu(null)}
         />
       )}
 
@@ -886,6 +1217,7 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
           editingId={editingNodeTypeId}
           initialData={nodeTypeFormData}
           onSave={handleSaveNodeTypeFromEditor}
+          onDuplicate={handleDuplicateNodeTypeFromEditor}
         />
       )}
 
@@ -896,6 +1228,40 @@ export function FlowBuilder({ onSave, flowId: initialFlowId }: FlowBuilderProps)
         onClose={() => setShowNodeContentDialog(false)}
         onUpdateNode={handleUpdateNode}
       />
+
+      {/* Content Edit Dialog */}
+      <ContentEditDialog
+        open={showContentEditDialog}
+        node={selectedContentEditNode}
+        onClose={() => setShowContentEditDialog(false)}
+        onUpdateNode={handleUpdateNode}
+        onDeleteNode={handleDeleteNode}
+      />
+
+      {/* Image Edit Dialog */}
+      <ImageEditDialog
+        open={showImageEditDialog}
+        node={selectedImageEditNode}
+        onClose={() => setShowImageEditDialog(false)}
+        onUpdateNode={handleUpdateImageNode}
+      />
+
+      {/* Canvas Settings Dialog */}
+      <CanvasSettings
+        open={showCanvasSettings}
+        onOpenChange={setShowCanvasSettings}
+        settings={canvasSettings}
+        onUpdateSettings={setCanvasSettings}
+      />
+
+      {/* Embed Dialog */}
+      {flowId && (
+        <FlowEmbedGenerator
+          flowId={flowId}
+          open={showEmbedDialog}
+          onOpenChange={setShowEmbedDialog}
+        />
+      )}
     </div>
   );
 }

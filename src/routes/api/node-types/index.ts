@@ -57,6 +57,7 @@ export const Route = createFileRoute('/api/node-types/')({
             type: body.type,
             style: body.style || null,
             iconStyle: body.iconStyle || null,
+            imageStyle: body.imageStyle || null,
             handles,
           };
 

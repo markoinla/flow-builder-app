@@ -16,6 +16,8 @@ export interface NodeStyle {
   borderWidth: number;
   textColor?: string;
   borderRadius?: number; // Border radius for corners (0 = square, 8 = rounded, 9999 = circle)
+  fontFamily?: string; // Google font family (for content nodes)
+  fontSize?: number; // Base font size in pixels (for content nodes)
 }
 
 export interface IconNodeStyle {
@@ -33,12 +35,25 @@ export interface IconNodeStyle {
   borderRadius?: number; // Border radius for corners (0 = square, 8 = rounded, 9999 = circle)
 }
 
+export interface ImageNodeStyle {
+  imageUrl?: string;
+  imageSize?: number; // Size as percentage (0-100)
+  opacity?: number; // Opacity from 0-100 (0 = transparent, 100 = opaque)
+  backgroundColor?: string;
+  backgroundOpacity?: number; // Opacity from 0-100 (0 = transparent, 100 = opaque)
+  borderColor?: string;
+  borderStyle?: 'solid' | 'dashed' | 'dotted';
+  borderWidth?: number;
+  borderRadius?: number; // Border radius for corners (0 = square, 8 = rounded, 9999 = circle)
+}
+
 export interface CustomNodeType {
   id: string;
   name: string;
-  type?: 'standard' | 'icon'; // Default is 'standard' for backward compatibility
-  style?: NodeStyle; // For standard nodes
+  type?: 'standard' | 'icon' | 'content' | 'image'; // Default is 'standard' for backward compatibility
+  style?: NodeStyle; // For standard/content nodes
   iconStyle?: IconNodeStyle; // For icon nodes
+  imageStyle?: ImageNodeStyle; // For image nodes
   handles?: HandleConfig; // Handle configuration for all positions
 }
 
@@ -56,55 +71,20 @@ const DEFAULT_STANDARD_NODES: CustomNodeType[] = [
       borderRadius: 3,
     },
   },
+];
+
+const DEFAULT_CONTENT_NODES: CustomNodeType[] = [
   {
-    id: 'process',
-    name: 'Process',
-    type: 'standard',
+    id: 'content-note',
+    name: 'Content Note',
+    type: 'content',
     style: {
-      backgroundColor: '#3b82f6',
-      borderColor: '#1e40af',
+      backgroundColor: '#fef3c7',
+      backgroundOpacity: 100,
+      borderColor: '#f59e0b',
       borderStyle: 'solid',
       borderWidth: 2,
-      textColor: '#ffffff',
-      borderRadius: 8,
-    },
-  },
-  {
-    id: 'decision',
-    name: 'Decision',
-    type: 'standard',
-    style: {
-      backgroundColor: '#f59e0b',
-      borderColor: '#b45309',
-      borderStyle: 'solid',
-      borderWidth: 2,
-      textColor: '#ffffff',
-      borderRadius: 8,
-    },
-  },
-  {
-    id: 'data',
-    name: 'Data',
-    type: 'standard',
-    style: {
-      backgroundColor: '#10b981',
-      borderColor: '#047857',
-      borderStyle: 'dashed',
-      borderWidth: 2,
-      textColor: '#ffffff',
-      borderRadius: 3,
-    },
-  },
-  {
-    id: 'output',
-    name: 'Output',
-    type: 'standard',
-    style: {
-      backgroundColor: '#8b5cf6',
-      borderColor: '#6d28d9',
-      borderStyle: 'solid',
-      borderWidth: 2,
-      textColor: '#ffffff',
+      textColor: '#78350f',
       borderRadius: 8,
     },
   },
@@ -113,7 +93,7 @@ const DEFAULT_STANDARD_NODES: CustomNodeType[] = [
 const DEFAULT_ICON_NODES: CustomNodeType[] = [
   {
     id: 'icon-database',
-    name: 'Database',
+    name: 'Icon Node',
     type: 'icon',
     iconStyle: {
       iconName: 'database',
@@ -129,81 +109,29 @@ const DEFAULT_ICON_NODES: CustomNodeType[] = [
       borderRadius: 8,
     },
   },
+];
+
+const DEFAULT_IMAGE_NODES: CustomNodeType[] = [
   {
-    id: 'icon-server',
-    name: 'Server',
-    type: 'icon',
-    iconStyle: {
-      iconName: 'server',
-      iconSize: 32,
-      iconColor: '#10b981',
-      backgroundColor: '#f0fdf4',
-      showLabel: true,
-      labelPosition: 'top',
-      labelColor: '#047857',
-      borderColor: '#10b981',
+    id: 'image-default',
+    name: 'Image Node',
+    type: 'image',
+    imageStyle: {
+      imageSize: 100,
+      opacity: 100,
+      backgroundColor: '#ffffff',
+      backgroundOpacity: 100,
+      borderColor: '#e5e5e5',
       borderStyle: 'solid',
-      borderWidth: 2,
-      borderRadius: 8,
-    },
-  },
-  {
-    id: 'icon-cloud',
-    name: 'Cloud',
-    type: 'icon',
-    iconStyle: {
-      iconName: 'cloud',
-      iconSize: 32,
-      iconColor: '#6366f1',
-      backgroundColor: '#eef2ff',
-      showLabel: true,
-      labelPosition: 'top',
-      labelColor: '#4338ca',
-      borderColor: '#6366f1',
-      borderStyle: 'solid',
-      borderWidth: 2,
-      borderRadius: 8,
-    },
-  },
-  {
-    id: 'icon-network',
-    name: 'Network',
-    type: 'icon',
-    iconStyle: {
-      iconName: 'network',
-      iconSize: 32,
-      iconColor: '#8b5cf6',
-      backgroundColor: '#faf5ff',
-      showLabel: true,
-      labelPosition: 'top',
-      labelColor: '#6d28d9',
-      borderColor: '#8b5cf6',
-      borderStyle: 'solid',
-      borderWidth: 2,
-      borderRadius: 8,
-    },
-  },
-  {
-    id: 'icon-lock',
-    name: 'Security',
-    type: 'icon',
-    iconStyle: {
-      iconName: 'lock',
-      iconSize: 32,
-      iconColor: '#ef4444',
-      backgroundColor: '#fef2f2',
-      showLabel: true,
-      labelPosition: 'top',
-      labelColor: '#b91c1c',
-      borderColor: '#ef4444',
-      borderStyle: 'solid',
-      borderWidth: 2,
-      borderRadius: 8,
+      borderWidth: 1,
+      borderRadius: 4,
     },
   },
 ];
 
 export const DEFAULT_NODE_TYPES: CustomNodeType[] = [
   ...DEFAULT_STANDARD_NODES,
+  ...DEFAULT_CONTENT_NODES,
   ...DEFAULT_ICON_NODES,
+  ...DEFAULT_IMAGE_NODES,
 ];

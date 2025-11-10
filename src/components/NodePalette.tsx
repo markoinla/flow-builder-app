@@ -34,6 +34,8 @@ const getDefaultFormData = (): NodeTypeFormData => ({
   borderWidth: 1,
   textColor: '#000000',
   borderRadius: 3,
+  fontFamily: 'Inter',
+  fontSize: 14,
   // Icon node fields
   iconName: 'box' as IconName,
   iconSize: 32,
@@ -47,6 +49,16 @@ const getDefaultFormData = (): NodeTypeFormData => ({
   iconBorderStyle: 'solid',
   iconBorderWidth: 0,
   iconBorderRadius: 8,
+  // Image node fields
+  imageUrl: '',
+  imageSize: 100,
+  imageOpacity: 100,
+  imageBackgroundColor: '#ffffff',
+  imageBackgroundOpacity: 100,
+  imageBorderColor: '#e5e5e5',
+  imageBorderStyle: 'solid',
+  imageBorderWidth: 1,
+  imageBorderRadius: 4,
   // Handle configuration
   handles: { top: 'both', bottom: 'both' } as HandleConfig,
 });
@@ -82,6 +94,8 @@ export function NodePalette({
         borderWidth: 1,
         textColor: '#000000',
         borderRadius: 3,
+        fontFamily: 'Inter',
+        fontSize: 14,
         iconName: nodeType.iconStyle.iconName as IconName,
         iconSize: nodeType.iconStyle.iconSize || 32,
         iconColor: nodeType.iconStyle.iconColor,
@@ -94,6 +108,87 @@ export function NodePalette({
         iconBorderStyle: nodeType.iconStyle.borderStyle || 'solid',
         iconBorderWidth: nodeType.iconStyle.borderWidth ?? 0,
         iconBorderRadius: nodeType.iconStyle.borderRadius ?? 8,
+        imageUrl: '',
+        imageSize: 100,
+        imageOpacity: 100,
+        imageBackgroundColor: '#ffffff',
+        imageBackgroundOpacity: 100,
+        imageBorderColor: '#e5e5e5',
+        imageBorderStyle: 'solid',
+        imageBorderWidth: 1,
+        imageBorderRadius: 4,
+        handles: nodeType.handles || { top: 'both', bottom: 'both' },
+      });
+    } else if (nodeType.type === 'content' && nodeType.style) {
+      setFormData({
+        name: nodeType.name,
+        nodeTypeCategory: 'content',
+        backgroundColor: nodeType.style.backgroundColor,
+        backgroundOpacity: nodeType.style.backgroundOpacity ?? 100,
+        borderColor: nodeType.style.borderColor,
+        borderStyle: nodeType.style.borderStyle,
+        borderWidth: nodeType.style.borderWidth,
+        textColor: nodeType.style.textColor || '#000000',
+        borderRadius: nodeType.style.borderRadius ?? 3,
+        fontFamily: nodeType.style.fontFamily || 'Inter',
+        fontSize: nodeType.style.fontSize || 14,
+        iconName: 'box' as IconName,
+        iconSize: 32,
+        iconColor: '#3b82f6',
+        iconBackgroundColor: '',
+        iconBackgroundOpacity: 100,
+        showLabel: true,
+        labelPosition: 'bottom',
+        labelColor: '#000000',
+        iconBorderColor: '#1a192b',
+        iconBorderStyle: 'solid',
+        iconBorderWidth: 0,
+        iconBorderRadius: 8,
+        imageUrl: '',
+        imageSize: 100,
+        imageOpacity: 100,
+        imageBackgroundColor: '#ffffff',
+        imageBackgroundOpacity: 100,
+        imageBorderColor: '#e5e5e5',
+        imageBorderStyle: 'solid',
+        imageBorderWidth: 1,
+        imageBorderRadius: 4,
+        handles: nodeType.handles || { top: 'both', bottom: 'both' },
+      });
+    } else if (nodeType.type === 'image' && nodeType.imageStyle) {
+      setFormData({
+        name: nodeType.name,
+        nodeTypeCategory: 'image',
+        backgroundColor: '#ffffff',
+        backgroundOpacity: 100,
+        borderColor: '#1a192b',
+        borderStyle: 'solid',
+        borderWidth: 1,
+        textColor: '#000000',
+        borderRadius: 3,
+        fontFamily: 'Inter',
+        fontSize: 14,
+        iconName: 'box' as IconName,
+        iconSize: 32,
+        iconColor: '#3b82f6',
+        iconBackgroundColor: '',
+        iconBackgroundOpacity: 100,
+        showLabel: true,
+        labelPosition: 'bottom',
+        labelColor: '#000000',
+        iconBorderColor: '#1a192b',
+        iconBorderStyle: 'solid',
+        iconBorderWidth: 0,
+        iconBorderRadius: 8,
+        imageUrl: nodeType.imageStyle.imageUrl || '',
+        imageSize: nodeType.imageStyle.imageSize || 100,
+        imageOpacity: nodeType.imageStyle.opacity ?? 100,
+        imageBackgroundColor: nodeType.imageStyle.backgroundColor || '#ffffff',
+        imageBackgroundOpacity: nodeType.imageStyle.backgroundOpacity ?? 100,
+        imageBorderColor: nodeType.imageStyle.borderColor || '#e5e5e5',
+        imageBorderStyle: nodeType.imageStyle.borderStyle || 'solid',
+        imageBorderWidth: nodeType.imageStyle.borderWidth ?? 1,
+        imageBorderRadius: nodeType.imageStyle.borderRadius ?? 4,
         handles: nodeType.handles || { top: 'both', bottom: 'both' },
       });
     } else if (nodeType.style) {
@@ -107,6 +202,8 @@ export function NodePalette({
         borderWidth: nodeType.style.borderWidth,
         textColor: nodeType.style.textColor || '#000000',
         borderRadius: nodeType.style.borderRadius ?? 3,
+        fontFamily: nodeType.style.fontFamily || 'Inter',
+        fontSize: nodeType.style.fontSize || 14,
         iconName: 'box' as IconName,
         iconSize: 32,
         iconColor: '#3b82f6',
@@ -119,6 +216,15 @@ export function NodePalette({
         iconBorderStyle: 'solid',
         iconBorderWidth: 0,
         iconBorderRadius: 8,
+        imageUrl: '',
+        imageSize: 100,
+        imageOpacity: 100,
+        imageBackgroundColor: '#ffffff',
+        imageBackgroundOpacity: 100,
+        imageBorderColor: '#e5e5e5',
+        imageBorderStyle: 'solid',
+        imageBorderWidth: 1,
+        imageBorderRadius: 4,
         handles: nodeType.handles || { top: 'both', bottom: 'both' },
       });
     }
@@ -132,6 +238,11 @@ export function NodePalette({
     } else {
       onAddNodeType(nodeType);
     }
+  };
+
+  const handleDuplicate = (nodeType: CustomNodeType) => {
+    // Always add as a new node type when duplicating
+    onAddNodeType(nodeType);
   };
 
   return (
@@ -236,6 +347,7 @@ export function NodePalette({
         initialData={formData}
         onSave={handleSave}
         onDelete={onDeleteNodeType}
+        onDuplicate={handleDuplicate}
       />
     </>
   );

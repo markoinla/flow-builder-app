@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Slider } from './ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Copy } from 'lucide-react';
 import type { RectangleNodeData } from './RectangleNode';
 
 interface RectangleEditDialogProps {
@@ -15,6 +16,7 @@ interface RectangleEditDialogProps {
   onClose: () => void;
   onUpdateNode: (nodeId: string, data: RectangleNodeData) => void;
   onDeleteNode: (nodeId: string) => void;
+  onDuplicateNode?: (nodeId: string) => void;
 }
 
 export function RectangleEditDialog({
@@ -23,6 +25,7 @@ export function RectangleEditDialog({
   onClose,
   onUpdateNode,
   onDeleteNode,
+  onDuplicateNode,
 }: RectangleEditDialogProps) {
   const [formData, setFormData] = useState<RectangleNodeData>({
     color: '#f5efe9',
@@ -62,6 +65,13 @@ export function RectangleEditDialog({
   const handleDelete = () => {
     if (node) {
       onDeleteNode(node.id);
+    }
+    onClose();
+  };
+
+  const handleDuplicate = () => {
+    if (node && onDuplicateNode) {
+      onDuplicateNode(node.id);
     }
     onClose();
   };
@@ -225,17 +235,25 @@ export function RectangleEditDialog({
             </TabsContent>
           </Tabs>
 
-          <DialogFooter>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete Rectangle
-            </Button>
-            <div className="flex-1" />
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
-              Save Changes
-            </Button>
+          <DialogFooter className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={handleDelete}>
+                Delete Rectangle
+              </Button>
+              {onDuplicateNode && (
+                <Button variant="outline" size="icon" onClick={handleDuplicate} title="Duplicate">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2 ml-auto">
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>
+                Save Changes
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

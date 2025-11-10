@@ -14,6 +14,7 @@ export function AnimatedEdge({
   data,
 }: EdgeProps) {
   const animationDirection = data?.animationDirection || 'forward';
+  const isPingPong = animationDirection === 'ping-pong';
   const animationSpeed = data?.animationSpeed || 1;
   const edgeType = data?.edgeType || 'default';
 
@@ -29,7 +30,7 @@ export function AnimatedEdge({
   }, [sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, edgeType]);
 
   const duration = 2 / animationSpeed;
-  const numPulses = 3; // Number of animated circles
+  const numPulses = isPingPong ? 1 : 3; // Only one circle for ping-pong, three for forward/backward
 
   return (
     <g>
@@ -38,7 +39,7 @@ export function AnimatedEdge({
         <path id={`edgePath-${id}`} d={edgePath} />
       </defs>
       {Array.from({ length: numPulses }).map((_, i) => {
-        const delay = (duration / numPulses) * i;
+        const delay = isPingPong ? 0 : (duration / numPulses) * i;
         return (
           <circle
             key={i}
@@ -47,11 +48,11 @@ export function AnimatedEdge({
             opacity="0.6"
           >
             <animateMotion
-              dur={`${duration}s`}
+              dur={isPingPong ? `${duration * 2}s` : `${duration}s`}
               repeatCount="indefinite"
               begin={`${delay}s`}
-              keyPoints={animationDirection === 'forward' ? '1;0' : '0;1'}
-              keyTimes="0;1"
+              keyPoints={isPingPong ? '1;0;1' : (animationDirection === 'forward' ? '1;0' : '0;1')}
+              keyTimes={isPingPong ? '0;0.5;1' : '0;1'}
               calcMode="linear"
             >
               <mpath href={`#edgePath-${id}`} />
@@ -60,7 +61,7 @@ export function AnimatedEdge({
               attributeName="opacity"
               values="0;0.8;0.8;0"
               keyTimes="0;0.1;0.9;1"
-              dur={`${duration}s`}
+              dur={isPingPong ? `${duration * 2}s` : `${duration}s`}
               repeatCount="indefinite"
               begin={`${delay}s`}
             />

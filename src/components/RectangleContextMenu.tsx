@@ -1,29 +1,25 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { Edit, Copy, Trash2, FileText, Image } from 'lucide-react';
+import { Edit, Copy, Trash2 } from 'lucide-react';
 
-interface NodeContextMenuProps {
+interface RectangleContextMenuProps {
   id: string;
   top: number;
   left: number;
-  onEdit?: (nodeId: string) => void;
-  onEditContent?: (nodeId: string) => void;
-  onEditImage?: (nodeId: string) => void;
-  onDuplicate?: (nodeId: string) => void;
-  onDelete?: (nodeId: string) => void;
+  onEdit?: (rectangleId: string) => void;
+  onDuplicate?: (rectangleId: string) => void;
+  onDelete?: (rectangleId: string) => void;
   onClose: () => void;
 }
 
-export function NodeContextMenu({
+export function RectangleContextMenu({
   id,
   top,
   left,
   onEdit,
-  onEditContent,
-  onEditImage,
   onDuplicate,
   onDelete,
   onClose,
-}: NodeContextMenuProps) {
+}: RectangleContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,16 +47,6 @@ export function NodeContextMenu({
     onEdit?.(id);
     onClose();
   }, [id, onEdit, onClose]);
-
-  const handleEditContent = useCallback(() => {
-    onEditContent?.(id);
-    onClose();
-  }, [id, onEditContent, onClose]);
-
-  const handleEditImage = useCallback(() => {
-    onEditImage?.(id);
-    onClose();
-  }, [id, onEditImage, onClose]);
 
   const handleDuplicate = useCallback(() => {
     onDuplicate?.(id);
@@ -92,24 +78,6 @@ export function NodeContextMenu({
           Edit Properties
         </button>
       )}
-      {onEditContent && (
-        <button
-          onClick={handleEditContent}
-          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          Edit Content
-        </button>
-      )}
-      {onEditImage && (
-        <button
-          onClick={handleEditImage}
-          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-        >
-          <Image className="mr-2 h-4 w-4" />
-          Edit Image
-        </button>
-      )}
       {onDuplicate && (
         <button
           onClick={handleDuplicate}
@@ -119,7 +87,7 @@ export function NodeContextMenu({
           Duplicate
         </button>
       )}
-      {(onEdit || onEditContent || onDuplicate) && onDelete && (
+      {(onEdit || onDuplicate) && onDelete && (
         <div className="my-1 h-px bg-border" />
       )}
       {onDelete && (

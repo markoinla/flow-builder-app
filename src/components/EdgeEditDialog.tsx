@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Slider } from './ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Switch } from './ui/switch';
+import { saveEdgeSettings } from '../lib/edgeSettingsStorage';
 
 export interface EdgeStyleData {
   stroke?: string;
@@ -18,7 +19,7 @@ export interface EdgeStyleData {
     strokeDasharray?: string;
     animation?: string;
   };
-  animationDirection?: 'forward' | 'backward';
+  animationDirection?: 'forward' | 'backward' | 'ping-pong';
   animationSpeed?: number;
   edgeType?: string; // Original edge type for path calculation
 }
@@ -62,7 +63,7 @@ export function EdgeEditDialog({
 
       // Determine animation direction from the CSS animation string if present
       let detectedDirection: 'forward' | 'backward' = 'forward';
-      if (currentAnimation) {
+      if (currentAnimation && typeof currentAnimation === 'string') {
         if (currentAnimation.includes('reverse')) {
           detectedDirection = 'backward';
         } else if (currentAnimation.includes('dashdraw')) {
@@ -71,7 +72,7 @@ export function EdgeEditDialog({
       }
 
       // Prefer edge.data direction, fall back to detected direction
-      const currentAnimationDirection = (edge.data?.animationDirection as 'forward' | 'backward') || detectedDirection;
+      const currentAnimationDirection = (edge.data?.animationDirection as 'forward' | 'backward' | 'ping-pong') || detectedDirection;
       const currentAnimationSpeed = (edge.data?.animationSpeed as number) || 1;
 
       // Determine line style from strokeDasharray
@@ -85,7 +86,7 @@ export function EdgeEditDialog({
       // Determine if animated - check for 'animated' edge type, edge.animated, or animation CSS
       const isAnimated = edge.type === 'animated' ||
                         edge.animated ||
-                        (currentAnimation && currentAnimation.includes('dashdraw'));
+                        (currentAnimation && typeof currentAnimation === 'string' && currentAnimation.includes('dashdraw'));
 
       setLineStyle(detectedLineStyle);
       setFormData({
@@ -93,7 +94,10 @@ export function EdgeEditDialog({
         strokeWidth: currentStrokeWidth as number,
         animated: isAnimated || false,
         type: currentType as any,
-        style: edge.style || {},
+        style: {
+          strokeDasharray: currentStrokeDasharray as string | undefined,
+          animation: currentAnimation as string | undefined,
+        },
         animationDirection: currentAnimationDirection,
         animationSpeed: currentAnimationSpeed,
       });
@@ -136,6 +140,19 @@ export function EdgeEditDialog({
         animationDirection: formData.animationDirection,
         animationSpeed: formData.animationSpeed,
         edgeType: formData.type, // Store the original edge type for path calculation
+      });
+
+      // Save settings to local storage for future edge creation
+      // Note: We save the original edge type (not 'animated') for path calculation
+      const typeToSave = formData.type || 'default';
+      saveEdgeSettings({
+        stroke: formData.stroke || '#b1b1b7',
+        strokeWidth: formData.strokeWidth || 2,
+        animated: formData.animated || false,
+        lineStyle: lineStyle,
+        type: typeToSave === 'animated' ? 'default' : typeToSave,
+        animationDirection: formData.animationDirection || 'forward',
+        animationSpeed: formData.animationSpeed || 1,
       });
     }
     onClose();
@@ -201,7 +218,14 @@ export function EdgeEditDialog({
                 <Label htmlFor="lineStyle">Line Style</Label>
                 <Select
                   value={lineStyle}
-                  onValueChange={(value) => setLineStyle(value as 'solid' | 'dashed' | 'dotted')}
+                  onValueChange={(value) => {
+                    const newLineStyle = value as 'solid' | 'dashed' | 'dotted';
+                    setLineStyle(newLineStyle);
+                    // If switching away from solid and ping-pong is selected, switch to forward
+                    if (newLineStyle !== 'solid' && formData.animationDirection === 'ping-pong') {
+                      setFormData({ ...formData, animationDirection: 'forward' });
+                    }
+                  }}
                 >
                   <SelectTrigger id="lineStyle">
                     <SelectValue />
@@ -250,7 +274,7 @@ export function EdgeEditDialog({
                     <Label htmlFor="animationDirection">Animation Direction</Label>
                     <Select
                       value={formData.animationDirection}
-                      onValueChange={(value) => setFormData({ ...formData, animationDirection: value as 'forward' | 'backward' })}
+                      onValueChange={(value) => setFormData({ ...formData, animationDirection: value as 'forward' | 'backward' | 'ping-pong' })}
                     >
                       <SelectTrigger id="animationDirection">
                         <SelectValue />
@@ -258,6 +282,7 @@ export function EdgeEditDialog({
                       <SelectContent>
                         <SelectItem value="forward">Forward</SelectItem>
                         <SelectItem value="backward">Backward</SelectItem>
+                        {lineStyle === 'solid' && <SelectItem value="ping-pong">Ping-Pong</SelectItem>}
                       </SelectContent>
                     </Select>
                   </div>

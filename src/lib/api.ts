@@ -81,6 +81,7 @@ export const flowsApi = {
     nodes?: Node[];
     edges?: Edge[];
     viewport?: any;
+    canvasSettings?: { showDots: boolean; backgroundColor: string; dotColor: string };
   }): Promise<{ flow: any; flowData: any }> {
     const response = await fetch('/api/flows', {
       method: 'POST',
@@ -102,6 +103,7 @@ export const flowsApi = {
       nodes?: Node[];
       edges?: Edge[];
       viewport?: any;
+      canvasSettings?: { showDots: boolean; backgroundColor: string; dotColor: string };
     }
   ): Promise<void> {
     const response = await fetch(`/api/flows/${id}`, {
@@ -130,15 +132,16 @@ export const flowsApi = {
     flowName: string,
     flowDescription: string,
     nodes: Node[],
-    edges: Edge[]
+    edges: Edge[],
+    canvasSettings?: { showDots: boolean; backgroundColor: string; dotColor: string }
   ): Promise<string> {
     if (flowId) {
       // Update existing flow
-      await flowsApi.update(flowId, { name: flowName, description: flowDescription, nodes, edges });
+      await flowsApi.update(flowId, { name: flowName, description: flowDescription, nodes, edges, canvasSettings });
       return flowId;
     } else {
       // Create new flow
-      const { flow } = await flowsApi.create({ name: flowName, description: flowDescription, nodes, edges });
+      const { flow } = await flowsApi.create({ name: flowName, description: flowDescription, nodes, edges, canvasSettings });
       return flow.id;
     }
   },

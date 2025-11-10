@@ -32,6 +32,7 @@ export const Route = createFileRoute('/api/node-types/$id')({
             type: body.type,
             style: body.style || null,
             iconStyle: body.iconStyle || null,
+            imageStyle: body.imageStyle || null,
             handles,
             updatedAt: new Date(),
           };

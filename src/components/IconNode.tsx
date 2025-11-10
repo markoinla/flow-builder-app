@@ -23,9 +23,9 @@ export interface IconNodeData {
 }
 
 const renderHandle = (position: Position, handleType?: HandleType) => {
-  if (!handleType) return null;
+  const isHidden = !handleType;
 
-  if (handleType === 'both') {
+  if (!handleType || handleType === 'both') {
     return (
       <>
         <Handle
@@ -33,14 +33,20 @@ const renderHandle = (position: Position, handleType?: HandleType) => {
           position={position}
           id={`${position}-source`}
           className="w-2 h-2 !bg-gray-400"
-          style={{ opacity: 0.3 }}
+          style={{
+            opacity: isHidden ? 0 : 0.3,
+            pointerEvents: isHidden ? 'none' : 'auto'
+          }}
         />
         <Handle
           type="target"
           position={position}
           id={`${position}-target`}
           className="w-2 h-2 !bg-gray-400"
-          style={{ opacity: 0.3 }}
+          style={{
+            opacity: isHidden ? 0 : 0.3,
+            pointerEvents: isHidden ? 'none' : 'auto'
+          }}
         />
       </>
     );
@@ -51,7 +57,10 @@ const renderHandle = (position: Position, handleType?: HandleType) => {
       type={handleType}
       position={position}
       className="w-2 h-2 !bg-gray-400"
-      style={{ opacity: 0.3 }}
+      style={{
+        opacity: isHidden ? 0 : 0.3,
+        pointerEvents: isHidden ? 'none' : 'auto'
+      }}
     />
   );
 };
@@ -98,7 +107,6 @@ export const IconNode = memo(({ data, selected }: NodeProps<IconNodeData>) => {
   const showLabel = data.showLabel ?? true;
   const labelPosition = data.labelPosition || 'bottom';
   const handles = data.handles || { top: 'both', bottom: 'both' };
-  const showHandles = handles.showHandles ?? true;
   const hasContent = data.content && data.content.trim().length > 0;
 
   // Calculate background color with opacity
@@ -156,10 +164,10 @@ export const IconNode = memo(({ data, selected }: NodeProps<IconNodeData>) => {
           )}
 
           {/* Connection handles - configurable */}
-          {showHandles && renderHandle(Position.Top, handles.top)}
-          {showHandles && renderHandle(Position.Right, handles.right)}
-          {showHandles && renderHandle(Position.Bottom, handles.bottom)}
-          {showHandles && renderHandle(Position.Left, handles.left)}
+          {renderHandle(Position.Top, handles.top)}
+          {renderHandle(Position.Right, handles.right)}
+          {renderHandle(Position.Bottom, handles.bottom)}
+          {renderHandle(Position.Left, handles.left)}
         </div>
 
         {/* Bottom label */}
@@ -183,7 +191,7 @@ export const IconNode = memo(({ data, selected }: NodeProps<IconNodeData>) => {
             {nodeContent}
           </PopoverTrigger>
           <PopoverContent
-            className="max-w-sm prose prose-sm"
+            className="w-auto max-w-2xl prose prose-sm"
             side="top"
             align="center"
             onOpenAutoFocus={(e) => e.preventDefault()}

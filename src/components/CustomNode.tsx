@@ -27,26 +27,52 @@ interface CustomNodeData {
 }
 
 const renderHandle = (position: Position, handleType?: HandleType) => {
-  if (!handleType) return null;
+  const isHidden = !handleType;
 
-  if (handleType === 'both') {
+  if (!handleType || handleType === 'both') {
     return (
       <>
-        <Handle type="source" position={position} id={`${position}-source`} />
-        <Handle type="target" position={position} id={`${position}-target`} />
+        <Handle
+          type="source"
+          position={position}
+          id={`${position}-source`}
+          style={{
+            opacity: isHidden ? 0 : 1,
+            pointerEvents: isHidden ? 'none' : 'auto'
+          }}
+        />
+        <Handle
+          type="target"
+          position={position}
+          id={`${position}-target`}
+          style={{
+            opacity: isHidden ? 0 : 1,
+            pointerEvents: isHidden ? 'none' : 'auto'
+          }}
+        />
       </>
     );
   }
 
-  return <Handle type={handleType} position={position} />;
+  return (
+    <Handle
+      type={handleType}
+      position={position}
+      style={{
+        opacity: isHidden ? 0 : 1,
+        pointerEvents: isHidden ? 'none' : 'auto'
+      }}
+    />
+  );
 };
 
-export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) => {
+export const CustomNode = memo(({ data, selected }: NodeProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPopoverHovered, setIsPopoverHovered] = useState(false);
   const [shouldShowPopover, setShouldShowPopover] = useState(false);
 
-  const style = data.style || {
+  const typedData = data as unknown as CustomNodeData;
+  const style = typedData.style || {
     backgroundColor: '#ffffff',
     borderColor: '#1a192b',
     borderStyle: 'solid',
@@ -54,9 +80,8 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
     textColor: '#000000',
   };
 
-  const handles = data.handles || { top: 'both', bottom: 'both' };
-  const showHandles = handles.showHandles ?? true;
-  const hasContent = data.content && data.content.trim().length > 0;
+  const handles = typedData.handles || { top: 'both', bottom: 'both' };
+  const hasContent = typedData.content && typedData.content.trim().length > 0;
 
   // Calculate background color with opacity
   const backgroundColor = style.backgroundOpacity !== undefined
@@ -94,11 +119,11 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
         fontWeight: 500,
       }}
     >
-      {showHandles && renderHandle(Position.Top, handles.top)}
-      {showHandles && renderHandle(Position.Right, handles.right)}
-      {showHandles && renderHandle(Position.Bottom, handles.bottom)}
-      {showHandles && renderHandle(Position.Left, handles.left)}
-      {data.label}
+      {renderHandle(Position.Top, handles.top)}
+      {renderHandle(Position.Right, handles.right)}
+      {renderHandle(Position.Bottom, handles.bottom)}
+      {renderHandle(Position.Left, handles.left)}
+      {typedData.label as React.ReactNode}
     </div>
   );
 
@@ -111,14 +136,14 @@ export const CustomNode = memo(({ data, selected }: NodeProps<CustomNodeData>) =
             {nodeContent}
           </PopoverTrigger>
           <PopoverContent
-            className="max-w-sm prose prose-sm"
+            className="w-auto max-w-2xl prose prose-sm"
             side="top"
             align="center"
             onOpenAutoFocus={(e) => e.preventDefault()}
             onMouseEnter={() => setIsPopoverHovered(true)}
             onMouseLeave={() => setIsPopoverHovered(false)}
           >
-            <div dangerouslySetInnerHTML={{ __html: data.content }} />
+            <div dangerouslySetInnerHTML={{ __html: typedData.content || '' }} />
           </PopoverContent>
         </Popover>
       ) : (

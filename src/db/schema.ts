@@ -84,11 +84,13 @@ export const nodeTypes = sqliteTable('node_types', {
   // Will be added back when auth is fully integrated
   // .references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
-  type: text('type').notNull(), // 'standard' or 'icon'
+  type: text('type').notNull(), // 'standard', 'icon', 'content', or 'image'
   // JSON string for standard node styles
   style: text('style', { mode: 'json' }),
   // JSON string for icon node styles
   iconStyle: text('icon_style', { mode: 'json' }),
+  // JSON string for image node styles
+  imageStyle: text('image_style', { mode: 'json' }),
   // JSON string for handle configuration
   handles: text('handles', { mode: 'json' }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
@@ -128,6 +130,8 @@ export const flowData = sqliteTable('flow_data', {
   edges: text('edges', { mode: 'json' }).notNull().default('[]'),
   // Store viewport state (zoom, position)
   viewport: text('viewport', { mode: 'json' }).notNull().default('{"x":0,"y":0,"zoom":1}'),
+  // Store canvas settings (background color, dots, etc.)
+  canvasSettings: text('canvas_settings', { mode: 'json' }).default('{"showDots":true,"backgroundColor":"#ffffff","dotColor":"#cccccc"}'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),

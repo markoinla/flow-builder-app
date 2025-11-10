@@ -63,6 +63,7 @@ export const Route = createFileRoute('/api/flows/')({
             nodes?: any[];
             edges?: any[];
             viewport?: { x: number; y: number; zoom: number };
+            canvasSettings?: { showDots: boolean; backgroundColor: string; dotColor: string };
           };
 
           const flowId = crypto.randomUUID();
@@ -85,6 +86,7 @@ export const Route = createFileRoute('/api/flows/')({
             nodes: body.nodes || [],
             edges: body.edges || [],
             viewport: body.viewport || { x: 0, y: 0, zoom: 1 },
+            canvasSettings: body.canvasSettings || { showDots: true, backgroundColor: '#ffffff', dotColor: '#cccccc' },
           };
 
           await db.insert(flowData).values(newFlowData);
